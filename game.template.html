@@ -493,7 +493,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
       <div class="pturn" id="turn0">You're up</div>
     </div>
     <div class="deckbox" aria-label="Letters left">
-      <div class="stack" id="deckCount">52</div>
+      <div class="stack" id="deckCount">40</div>
       <div class="decklabel">letters<br>left</div>
     </div>
     <div class="player p2" id="card1">
@@ -540,7 +540,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
         <li>Don't want a letter? Skip it. It's gone for good, and with two players your turn ends.</li>
         <li>Each word can be served only once per game. If a spot would make a word that's already been served, the letter can't go there.</li>
         <li>Spell one of today's specials for a big bonus.</li>
-        <li>The game ends when all 52 letters are used.</li>
+        <li>The game ends when all 40 letters are used.</li>
         <li>The <strong>Daily Table</strong> deals everyone the same letters and specials each day. You get one try, with no undo, and a fresh table at midnight.</li>
       </ul>
       <p>Scoring: add up the letter values, then ×10 for a 3-letter word, ×15 for 4, ×25 for 5, and ×35 for a 6-letter Qu word. Each extra course adds 15. Specials add 100 (4 letters) or 200 (5 letters).</p>
@@ -619,6 +619,7 @@ const COURSE_BONUS = 15;
 const SPECIAL_BONUS = { 4: 100, 5: 200 };
 const SENT_BACK = 25;
 const COLS = 5, ROWS = 5;
+const DECK_SIZE = 40; // letters per game; keep newDeck's mix in step with this
 const SITE_URL = "https://dotawkward.github.io/small-plates/";
 const DAILY_EPOCH = Date.UTC(2026, 9, 17); // Daily Table #1
 const STORE_KEY = "small-plates-v1";
@@ -786,10 +787,10 @@ function feedback(kind) {
 /* ---------- Game setup ---------- */
 
 function newDeck(rnd) {
-  // 52 letters: 20 vowels, common consonants, and one rare letter.
-  const base = "EEEEEEAAAAIIIIOOOOUUTTTNNNRRRSSSLLLDDCCMMPPHGBFWYKV".split("");
-  base.push(pick(["J", "Q", "X", "Z"], 1, rnd)[0]);
-  return shuffle(base.map(c => c.toLowerCase()), rnd);
+  // DECK_SIZE (40) letters: 15 vowels, 24 consonants (common ones doubled up), and one rare letter.
+  const letters = ("EEEEAAAIIIOOOUU" + "TTTNNRRSSLL" + "DDCMPHGB" + "FWYKV").split("");
+  letters.push(pick(["J", "Q", "X", "Z"], 1, rnd)[0]);
+  return shuffle(letters.map(c => c.toLowerCase()), rnd);
 }
 
 function newGame(mode, names, date = null) {
@@ -1101,7 +1102,7 @@ function render() {
   if (s.over) {
     $("ticketWho").textContent = "Kitchen's closed";
     $("current").replaceChildren(el("span", "", "–"));
-    $("next").replaceChildren("All 52 letters used");
+    $("next").replaceChildren("All " + s.deck.length + " letters used");
   } else {
     $("ticketWho").textContent = one ? "Your letter" : s.names[p] + ", you're up";
     $("current").replaceChildren(face(cur), el("span", "v", worth(cur)));
