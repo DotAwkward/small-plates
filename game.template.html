@@ -430,6 +430,22 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 .share-card { background: var(--bg); border-radius: 12px; padding: 12px 14px; white-space: pre-wrap; font: 0.95rem/1.35 var(--font-body); margin: 0; overflow-wrap: anywhere; }
 .btn.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
 
+/* Add to home screen */
+.install {
+  display: flex; align-items: center; gap: 8px;
+  background: color-mix(in srgb, var(--rim) 10%, var(--surface));
+  border: 1.5px solid color-mix(in srgb, var(--rim) 35%, transparent);
+  border-radius: 14px; padding: 10px 8px 10px 14px;
+}
+.install-text { display: flex; flex-direction: column; min-width: 0; flex: 1; font-size: 0.82rem; color: var(--muted); line-height: 1.3; }
+.install-text b { color: var(--ink); font-size: 0.92rem; }
+.install .btn { padding: 8px 12px; white-space: nowrap; }
+.install .ghost.round { width: 30px; height: 30px; border: 0; font-size: 1.3rem; color: var(--muted); }
+.how { display: flex; flex-direction: column; gap: 6px; }
+.how h3 { margin: 6px 0 0; font-family: var(--font-display); font-weight: 400; font-size: 1.1rem; }
+.how ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 4px; }
+.how .mine { background: color-mix(in srgb, var(--rim) 10%, transparent); border-radius: 12px; padding: 4px 12px 10px; }
+
 @media (prefers-reduced-motion: reduce) {
   .switch span, .switch span::after { transition: none; }
   .intro-body, .dots span { animation: none; transition: none; }
@@ -452,6 +468,13 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
       <button class="ghost" id="menuBtn" type="button" aria-haspopup="dialog">Menu</button>
     </div>
   </header>
+
+  <div class="install" id="installBar" hidden>
+    <div class="install-text"><b>Put Small Plates on your home screen</b><span id="installHow">It opens full screen and works offline.</span></div>
+    <button class="btn primary" id="installBtn" type="button">Install</button>
+    <button class="btn" id="installHelp" type="button">Show me</button>
+    <button class="ghost round" id="installClose" type="button" aria-label="Not now">×</button>
+  </div>
 
   <section class="scores" aria-label="Scores">
     <div class="player p1" id="card0">
@@ -593,6 +616,7 @@ const KEY = {
   intro: STORE_KEY + "-intro",
   stats: STORE_KEY + "-stats",
   settings: STORE_KEY + "-settings",
+  installDismissed: STORE_KEY + "-install-dismissed",
   daily: date => STORE_KEY + "-daily-" + date,
 };
 const HOST_THEME = document.documentElement.getAttribute("data-theme");
@@ -1292,6 +1316,7 @@ function openMenu() {
     menuItem("Settings", "", () => openPage("settings")),
     menuItem("About", "", () => openPage("about")),
   );
+  if (canInstall()) list.append(menuItem("Add to home screen", "Get the app icon", () => openPage("install")));
   showOverlay("menu");
 }
 $("menuBtn").addEventListener("click", openMenu);
@@ -1409,12 +1434,80 @@ function renderAbout(body) {
   body.append(wrap);
 }
 
+/* ---------- Add to home screen ---------- */
+
+let installEvent = null; // Android/Chrome's install prompt, saved for our own button
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isAndroid = () => /Android/i.test(navigator.userAgent);
+// Only the real website can be installed; not the installed app itself, and not a page shown inside another page.
+const canInstall = () => window.self === window.top && !isStandalone();
+
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  installEvent = e;
+  updateInstallBar();
+});
+window.addEventListener("appinstalled", () => {
+  installEvent = null;
+  writeJSON(KEY.installDismissed, true);
+  updateInstallBar();
+});
+
+function updateInstallBar() {
+  const show = canInstall() && !readJSON(KEY.installDismissed) && (installEvent || isIOS() || isAndroid());
+  $("installBar").hidden = !show;
+  if (!show) return;
+  $("installBtn").hidden = !installEvent;
+  $("installHelp").hidden = !!installEvent;
+  $("installHow").textContent = installEvent
+    ? "It opens full screen and works offline."
+    : isIOS() ? "Tap Share, then Add to Home Screen." : "It opens full screen and works offline.";
+}
+
+async function promptInstall() {
+  if (!installEvent) return openPage("install");
+  installEvent.prompt();
+  try { await installEvent.userChoice; } catch (e) {}
+  installEvent = null;
+  updateInstallBar();
+}
+
+$("installBtn").addEventListener("click", promptInstall);
+$("installHelp").addEventListener("click", () => openPage("install"));
+$("installClose").addEventListener("click", () => {
+  writeJSON(KEY.installDismissed, true);
+  updateInstallBar();
+});
+
+function renderInstall(body) {
+  const how = el("div", "how");
+  if (installEvent) {
+    const b = el("button", "btn primary", "Install Small Plates");
+    b.type = "button";
+    b.addEventListener("click", promptInstall);
+    how.append(el("p", "", "Your phone can install it in one tap:"), b);
+  }
+  const iphone = el("div", isIOS() ? "mine" : "");
+  const iSteps = el("ol");
+  ["Open this page in Safari.", "Tap the Share button (the square with an arrow pointing up).", "Scroll down and tap Add to Home Screen.", "Tap Add."].forEach(t => iSteps.append(el("li", "", t)));
+  iphone.append(el("h3", "", "iPhone or iPad"), iSteps);
+  const android = el("div", isAndroid() ? "mine" : "");
+  const aSteps = el("ol");
+  ["Open this page in Chrome.", "Tap the ⋮ menu in the top corner.", "Tap Install app or Add to Home screen."].forEach(t => aSteps.append(el("li", "", t)));
+  android.append(el("h3", "", "Android"), aSteps);
+  if (isAndroid()) how.append(android, iphone); else how.append(iphone, android);
+  how.append(el("p", "", "Then open Small Plates from its new icon. It works offline after that, even with no signal."),
+    el("p", "", "If you opened this link inside another app, like Messages, Gmail or Instagram, open it in Safari or Chrome first. Those apps can't add it to your home screen."));
+  body.append(how);
+}
+
 function openPage(which) {
-  const titles = { stats: "Your stats", settings: "Settings", about: "About" };
+  const titles = { stats: "Your stats", settings: "Settings", about: "About", install: "Add to home screen" };
   $("pageTitle").textContent = titles[which];
   const body = $("pageBody");
   body.replaceChildren();
-  ({ stats: renderStats, settings: renderSettings, about: renderAbout })[which](body);
+  ({ stats: renderStats, settings: renderSettings, about: renderAbout, install: renderInstall })[which](body);
   showOverlay("page");
 }
 
@@ -1596,6 +1689,7 @@ function migrate() {
 function start(data) {
   migrate();
   applyTheme();
+  updateInstallBar();
   state = (data && validGame(data.state) && data.state) || load();
   if (!state) {
     const pr = prefs();
