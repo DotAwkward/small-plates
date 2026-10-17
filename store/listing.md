@@ -18,7 +18,7 @@ The kitchen sends out one letter at a time. Put it on one of five plates, swap i
 
 PLAY YOUR WAY
 • Table for one: chase your best score.
-• Table for two: pass the phone across the table and take turns, one word each.
+• Table for two: pass the phone across the table and take turns, one letter each.
 • The Daily Table: everyone gets the same letters each day. One try, no undo, and a result card to share with friends.
 
 LITTLE THINGS THAT MAKE IT FUN

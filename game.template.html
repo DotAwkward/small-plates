@@ -553,12 +553,13 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
       <ul>
         <li>Each row is a plate that holds one word, up to 5 letters, left to right with no gaps.</li>
         <li>Put the letter at either end of a plate, or drop it on a letter already there to swap it.</li>
-        <li>When a plate spells a word of 3 or more letters, it's served and you score. Playing with two, it's then the other person's turn.</li>
+        <li>When a plate spells a word of 3 or more letters, it's served and you score.</li>
+        <li>Playing with two, you take turns one letter at a time, whether or not it makes a word.</li>
         <li>Keep turning a plate into new words, each one another course: <span class="ex">TIN → TINE → TILE → TILED</span>. Every course adds a bonus.</li>
-        <li>A plate with only one or two letters on it isn't a dish yet, so keep going.</li>
+        <li>A plate with only one or two letters on it isn't a dish yet, so it isn't checked.</li>
         <li>The Q always comes with its U. The <span class="ex">QU</span> plate takes one spot but spells two letters, so <span class="ex">QU·I·T</span> is QUIT.</li>
         <li>Serve something that isn't a word and it gets <strong>sent back</strong>: you lose 25 and the plate's courses start over. The letters stay, so you or the other player can fix it on a later turn.</li>
-        <li>Don't want a letter? Skip it. It's gone for good, and with two players your turn ends.</li>
+        <li>Don't want a letter? Skip it. It's gone for good, and that counts as your turn.</li>
         <li>Each word can be served only once per game. If a spot would make a word that's already been served, the letter can't go there.</li>
         <li>Spell one of today's specials for a big bonus.</li>
         <li>The game ends when all 40 letters are used.</li>
@@ -586,7 +587,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
     <fieldset class="seg">
       <legend>How many?</legend>
       <label><input type="radio" name="mode" value="solo" id="modeSolo"><span>Table for one<small>Beat your best score</small></span></label>
-      <label><input type="radio" name="mode" value="duo" id="modeDuo" checked><span>Table for two<small>Take turns, one word each</small></span></label>
+      <label><input type="radio" name="mode" value="duo" id="modeDuo" checked><span>Table for two<small>Take turns, one letter each</small></span></label>
     </fieldset>
     <div class="field f1"><label for="in0" id="in0Label">Goes first</label><input id="in0" maxlength="14" autocomplete="off"></div>
     <div class="field f2" id="field1"><label for="in1">Goes second</label><input id="in1" maxlength="14" autocomplete="off"></div>
@@ -904,7 +905,8 @@ function place(r, c) {
     state.msg = { kind: "info", p, text: tiles === 1 ? "started a new plate with" : "is still cooking", word: w };
     flash = { r, c, kind: "pop" };
     feedback("place");
-    return finishMove(false);
+    // Every letter is a turn, so with two players the phone passes after each one.
+    return finishMove(true);
   }
 
   if (DICT.has(w)) {
