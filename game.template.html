@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@600;700&family=Figtree:wght@400;500;600;700&family=Young+Serif&display=swap">
 <!--/fonts-->
 <style>
-/* Layout: one phone-width column set like a table — the bill (scores), the specials board, five plates on the tablecloth, then the order ticket you pass across. */
+/* Layout: one phone-width column set like a table — the bill (scores), the specials board, four plates on the tablecloth, then the order ticket you pass across. */
 :root {
   --bg: #eef1f5;
   --surface: #ffffff;
@@ -640,7 +640,7 @@ const LEN_MULT = { 3: 10, 4: 15, 5: 25, 6: 35 }; // 6 letters only happens with 
 const COURSE_BONUS = 15;
 const SPECIAL_BONUS = { 4: 100, 5: 200 };
 const SENT_BACK = 25;
-const COLS = 5, ROWS = 5;
+const COLS = 5, ROWS = 4; // 5 spots per plate, 4 plates (games saved before this keep their 5 plates)
 const DECK_SIZE = 40; // letters per game; keep newDeck's mix in step with this
 const SITE_URL = "https://dotawkward.github.io/small-plates/";
 const DAILY_EPOCH = Date.UTC(2026, 9, 17); // Daily Table #1
@@ -1910,7 +1910,7 @@ function migrate() {
   // Earlier versions kept the one game under STORE_KEY.
   const old = readJSON(STORE_KEY);
   if (old && old.deck && !readJSON(KEY.game)) {
-    old.rowLog = old.rowLog || Array.from({ length: ROWS }, () => []);
+    old.rowLog = old.rowLog || Array.from({ length: old.rows.length }, () => []);
     old.maxCourse = old.maxCourse || { n: 0, w: "" };
     writeJSON(KEY.game, old);
   }

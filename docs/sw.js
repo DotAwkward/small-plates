@@ -1,6 +1,6 @@
 // Small Plates service worker: keeps the whole game on the phone so it plays offline.
 const PREFIX = "small-plates-";
-const CACHE = PREFIX + "9263ecba7b";
+const CACHE = PREFIX + "0750c16bf2";
 const FILES = [
   "./",
   "index.html",

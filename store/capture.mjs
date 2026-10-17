@@ -2,7 +2,7 @@
 // 1. Serve docs/ on http://localhost:8770 (any static server).
 // 2. Start Chrome: chrome --headless=new --remote-debugging-port=9333 --user-data-dir=<temp dir>
 // 3. node store/capture.mjs
-// Writes store/raw/*.png (1080x1920 phone screens), then store/screenshots/*.png (framed with captions)
+// Writes store/raw/*.png (1080x2160 phone screens), then store/screenshots/*.png (framed with captions)
 // and store/feature-graphic.png (1024x500).
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -53,10 +53,9 @@ window.scene = function (name) {
       { ...plate("quiet".replace("qu", "q"), 1, 2) },
       { ...plate("pasta", 0, 1) },
       row(["c", "a", null, null, null], 1),
-      { word: null, course: 0, bad: false, cells: [null, null, null, null, null] },
     ];
     state.rows[1].word = "quiet";
-    state.rowLog = [["g","g","g","g"], ["g","g"], ["g"], [], []];
+    state.rowLog = [["g","g","g","g"], ["g","g"], ["g"], []];
     state.specials = [{ w: "pasta", by: 0 }, { w: "lime", by: null }, { w: "toast", by: null }];
     state.scores = [415, 360];
     state.turn = 1;
@@ -69,8 +68,8 @@ window.scene = function (name) {
     state.msg = { kind: "good", p: 0, word: "tiled", pts: 195, note: "course 4" };
     if (name === "dark") { state = newGame("solo", ["You", ""]); Object.assign(state, {
       deck: "trailsmeanpodcghbuyikvwefoaeiusnrtlaoeie".split(""), pos: 14,
-      rows: [plate("plate", 0, 3), plate("bread", 0, 1), row(["s", "a", "l"], 0), row(["o", "n"], 0), { word: null, course: 0, bad: false, cells: Array(5).fill(null) }],
-      rowLog: [["g","g","g"], ["g"], [], [], []],
+      rows: [plate("plate", 0, 3), plate("bread", 0, 1), row(["s", "a", "l"], 0), row(["o", "n"], 0)],
+      rowLog: [["g","g","g"], ["g"], [], []],
       specials: [{ w: "bread", by: 0 }, { w: "tray", by: null }, { w: "soup", by: null }],
       scores: [688, 0], used: { pat: 0, pate: 0, plate: 0, bread: 0 },
       log: [{ p: 0, w: "pat", pts: 50, kind: "word" }, { p: 0, w: "pate", pts: 90, kind: "word" }, { p: 0, w: "plate", pts: 230, kind: "word" }, { p: 0, w: "bread", pts: 318, kind: "word" }],
@@ -85,7 +84,7 @@ window.scene = function (name) {
     state = newGame("daily", ["You", ""], today);
     Object.assign(state, {
       pos: state.deck.length, over: true, recorded: true, scores: [1185, 0],
-      rowLog: [["g","g","g"], ["g","s","g"], ["g","g"], ["g"], ["g","g","g","g"]],
+      rowLog: [["g","g","g"], ["g","s","g"], ["g","g"], ["g","g","g","g"]],
       log: [{ p: 0, w: "tiled", pts: 195, kind: "word" }, { p: 0, w: "lemon", pts: 375, kind: "word" }],
     });
     state.specials.forEach((s, i) => { if (i < 2) s.by = 0; });
@@ -109,7 +108,7 @@ async function captureRaw() {
   await tab.send("Runtime.enable");
   // Skip the sting, the intro and the install banner on load.
   await tab.send("Page.addScriptToEvaluateOnNewDocument", { source: `try { sessionStorage.setItem("da-sting", "1"); localStorage.setItem("small-plates-v1-intro", "true"); localStorage.setItem("small-plates-v1-install-dismissed", "true"); } catch (e) {}` });
-  const phone = { w: 360, h: 640, scale: 3 };
+  const phone = { w: 360, h: 720, scale: 3 }; // 1080 x 2160, a modern tall phone (Play allows up to 2:1)
   for (const [name, dark] of [["board", false], ["welcome", false], ["howto", false], ["daily", false], ["stats", false], ["dark", true]]) {
     await tab.send("Emulation.setDeviceMetricsOverride", { width: phone.w, height: phone.h, deviceScaleFactor: phone.scale, mobile: true });
     await tab.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: dark ? "dark" : "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
@@ -143,7 +142,7 @@ async function frame() {
       html,body{margin:0;width:1080px;height:1920px;overflow:hidden}
       body{background:${color};display:flex;flex-direction:column;align-items:center;font-family:"Young Serif",Georgia,serif;color:#fff}
       h1{font-weight:400;font-size:86px;line-height:1.08;text-align:center;margin:120px 70px 70px;letter-spacing:-0.01em}
-      .phone{width:780px;height:1387px;border-radius:64px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35),0 0 0 14px rgba(255,255,255,.14)}
+      .phone{width:690px;height:1380px;border-radius:64px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35),0 0 0 14px rgba(255,255,255,.14)}
       .phone img{width:100%;height:100%;display:block}
     </style></head><body><h1>${caption}</h1><div class="phone"><img src="${img}"></div></body></html>`;
     const file = join(here, "frames", `${name}.html`);

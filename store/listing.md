@@ -14,7 +14,7 @@ Build words one letter at a time, then turn each one into the next course.
 
 Small Plates is a cozy word game for one or two players, made for the few spare minutes you didn't plan for: waiting on dinner, a long line, the couch.
 
-The kitchen sends out one letter at a time. Put it on one of five plates, swap it for a letter that's already there, or skip it. When a plate spells a word, it's served and you score. Then keep going: turn TIN into TINE, TILE and TILED, and every new course on the same plate earns a bonus.
+The kitchen sends out one letter at a time. Put it on one of four plates, swap it for a letter that's already there, or skip it. When a plate spells a word, it's served and you score. Then keep going: turn TIN into TINE, TILE and TILED, and every new course on the same plate earns a bonus.
 
 PLAY YOUR WAY
 • Table for one: chase your best score.
