@@ -2,7 +2,7 @@
   "name": "Small Plates",
   "short_name": "Small Plates",
   "description": "A word game for one or two: plate letters, serve words, and turn each one into the next course.",
-  "id": "./",
+  "id": "/small-plates/?app=small-plates",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
