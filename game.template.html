@@ -378,7 +378,60 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 .intro-actions { display: flex; justify-content: space-between; gap: 8px; }
 .intro-actions .btn { min-width: 96px; }
 
+.demo-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* Menu, stats, settings, about */
+.sheet.scroll { max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.menu-list { display: flex; flex-direction: column; }
+.menu-item {
+  display: flex; align-items: baseline; gap: 10px; width: 100%; text-align: left;
+  background: transparent; border: 0; border-bottom: 1.5px dotted var(--line);
+  padding: 12px 2px; cursor: pointer;
+}
+.menu-item:last-child { border-bottom: 0; }
+.menu-item .mi-name { font-family: var(--font-display); font-size: 1.15rem; white-space: nowrap; }
+.menu-item .mi-sub { color: var(--muted); font-size: 0.82rem; margin-left: auto; text-align: right; }
+.menu-item.feature .mi-name { color: var(--rim); }
+.menu-item:hover .mi-name { text-decoration: underline; text-underline-offset: 3px; }
+.pill {
+  font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  background: color-mix(in srgb, var(--saffron) 24%, transparent); color: var(--ink);
+}
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tile { background: var(--bg); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.tile .k { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.tile .val { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.15; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tile .val.word { font-family: var(--font-tile); font-size: 1.1rem; letter-spacing: 0.05em; padding-top: 4px; }
+.tile .sub { font-size: 0.78rem; color: var(--muted); }
+.tile.wide { grid-column: 1 / -1; }
+.setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1.5px dotted var(--line); }
+.setting .st-text { display: flex; flex-direction: column; min-width: 0; font-weight: 600; }
+.setting .st-text small { color: var(--muted); font-size: 0.8rem; font-weight: 400; }
+.switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: background .2s; }
+.switch span::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--surface); box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .2s;
+}
+.switch input:checked + span { background: var(--p2); }
+.switch input:checked + span::after { transform: translateX(20px); }
+.switch input:focus-visible + span { outline: 3px solid var(--rim); outline-offset: 2px; }
+.seg.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.seg.three span { font-family: var(--font-body); font-weight: 600; font-size: 0.9rem; padding: 8px 4px; }
+.about h3 { margin: 4px 0 0; font-family: var(--font-display); font-weight: 400; font-size: 1.1rem; }
+.sheet .about p { color: var(--ink); }
+.sheet .about p.muted { color: var(--muted); font-size: 0.85rem; }
+.about a { color: var(--rim); }
+.about .logo { width: 72px; height: 72px; font-size: 2.1rem; }
+.about-head { display: flex; align-items: center; gap: 14px; }
+.linkish { background: none; border: 0; padding: 0; color: var(--rim); font-weight: 700; cursor: pointer; text-align: left; font-size: 0.92rem; }
+.share-card { background: var(--bg); border-radius: 12px; padding: 12px 14px; white-space: pre-wrap; font: 0.95rem/1.35 var(--font-body); margin: 0; overflow-wrap: anywhere; }
+.btn.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+
 @media (prefers-reduced-motion: reduce) {
+  .switch span, .switch span::after { transition: none; }
   .intro-body, .dots span { animation: none; transition: none; }
   .pop, .shake { animation: none; }
   .player, .ticket { transition: none; }
@@ -396,7 +449,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
     <div class="brand"><h1>Small Plates</h1><span id="tableSize">for two</span></div>
     <div class="top-actions">
       <button class="ghost round" id="helpBtn" type="button" aria-label="How to play">?</button>
-      <button class="ghost" id="newBtn" type="button">New table</button>
+      <button class="ghost" id="menuBtn" type="button" aria-haspopup="dialog">Menu</button>
     </div>
   </header>
 
@@ -453,6 +506,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
         <li>Don't want a letter? Skip it. It's gone for good, and with two players your turn ends.</li>
         <li>Each word scores once per game. Spell one of today's specials for a big bonus.</li>
         <li>The game ends when all 52 letters are used.</li>
+        <li>The <strong>Daily Table</strong> deals everyone the same letters and specials each day. You get one try, with no undo, and a fresh table at midnight.</li>
       </ul>
       <p>Scoring: add up the letter values, then ×10 for a 3-letter word, ×15 for 4, ×25 for 5. Each extra course adds 15. Specials add 100 (4 letters) or 200 (5 letters).</p>
     </div>
@@ -471,8 +525,8 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 </div>
 
 <div class="overlay" id="setup" hidden>
-  <form class="sheet" id="setupForm">
-    <h2>New table</h2>
+  <form class="sheet scroll" id="setupForm" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
+    <h2 id="setupTitle">New table</h2>
     <fieldset class="seg">
       <legend>How many?</legend>
       <label><input type="radio" name="mode" value="solo" id="modeSolo"><span>Table for one<small>Beat your best score</small></span></label>
@@ -481,6 +535,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
     <div class="field f1"><label for="in0" id="in0Label">Goes first</label><input id="in0" maxlength="14" autocomplete="off"></div>
     <div class="field f2" id="field1"><label for="in1">Goes second</label><input id="in1" maxlength="14" autocomplete="off"></div>
     <p id="setupNote">Names stay on this phone.</p>
+    <button class="linkish" type="button" id="setupDaily">Or play today's Daily Table →</button>
     <div class="actions">
       <button class="btn" type="button" id="cancelSetup">Cancel</button>
       <button class="btn primary" type="submit">Seat us</button>
@@ -489,10 +544,11 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 </div>
 
 <div class="overlay" id="end" hidden>
-  <div class="sheet">
+  <div class="sheet scroll" role="dialog" aria-modal="true" aria-labelledby="endTitle">
     <h2 id="endTitle">Check, please!</h2>
     <p id="endNote"></p>
     <div class="final" id="final"></div>
+    <pre class="share-card" id="shareCard" hidden></pre>
     <div class="actions">
       <button class="btn" type="button" id="seeBoard">Look at the table</button>
       <button class="btn primary" type="button" id="againBtn">Another round</button>
@@ -500,10 +556,25 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
   </div>
 </div>
 
+<div class="overlay" id="menu" hidden>
+  <div class="sheet scroll" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+    <div class="sheet-head"><h2 id="menuTitle">Menu</h2><button class="btn" type="button" data-close>Close</button></div>
+    <nav class="menu-list" id="menuList"></nav>
+  </div>
+</div>
+
+<div class="overlay" id="page" hidden>
+  <div class="sheet scroll" role="dialog" aria-modal="true" aria-labelledby="pageTitle">
+    <div class="sheet-head"><h2 id="pageTitle">Stats</h2><button class="btn" type="button" data-close>Done</button></div>
+    <div id="pageBody"></div>
+  </div>
+</div>
+
 <script>
 const WORDLIST = "__WORDS__";
 const SPECIALS4 = __SPECIALS4__;
 const SPECIALS5 = __SPECIALS5__;
+const APP_VERSION = "__APPVERSION__";
 
 const DICT = new Set(WORDLIST.split(" "));
 const VALUES = { a:1,b:3,c:3,d:2,e:1,f:4,g:2,h:4,i:1,j:8,k:5,l:1,m:3,n:1,o:1,p:3,q:10,r:1,s:1,t:1,u:1,v:4,w:4,x:8,y:4,z:10 };
@@ -512,69 +583,208 @@ const COURSE_BONUS = 15;
 const SPECIAL_BONUS = { 4: 100, 5: 200 };
 const SENT_BACK = 25;
 const COLS = 5, ROWS = 5;
+const SITE_URL = "https://dotawkward.github.io/small-plates/";
+const DAILY_EPOCH = Date.UTC(2026, 9, 17); // Daily Table #1
 const STORE_KEY = "small-plates-v1";
+const KEY = {
+  game: STORE_KEY + "-game",
+  active: STORE_KEY + "-active",
+  prefs: STORE_KEY + "-prefs",
+  intro: STORE_KEY + "-intro",
+  stats: STORE_KEY + "-stats",
+  settings: STORE_KEY + "-settings",
+  daily: date => STORE_KEY + "-daily-" + date,
+};
+const HOST_THEME = document.documentElement.getAttribute("data-theme");
 
 let state = null;
 let flash = null; // { r, c, kind } for a one-shot animation
 
 const $ = id => document.getElementById(id);
 
-function shuffle(a) {
+/* ---------- Randomness (seeded for the Daily Table) ---------- */
+
+function seeded(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle(a, rnd = Math.random) {
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rnd() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
-function pick(list, n) { return shuffle(list.slice()).slice(0, n); }
+function pick(list, n, rnd = Math.random) { return shuffle(list.slice(), rnd).slice(0, n); }
 
-function newDeck() {
-  // 52 letters: 20 vowels, common consonants, and one rare letter.
-  const base = "EEEEEEAAAAIIIIOOOOUUTTTNNNRRRSSSLLLDDCCMMPPHGBFWYKV".split("");
-  base.push(pick(["J", "Q", "X", "Z"], 1)[0]);
-  return shuffle(base.map(c => c.toLowerCase()));
+/* ---------- Dates ---------- */
+
+function dateStr(d = new Date()) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
-
-function newGame(mode, names) {
-  return {
-    mode,
-    names,
-    scores: [0, 0],
-    turn: 0,
-    deck: newDeck(),
-    pos: 0,
-    rows: Array.from({ length: ROWS }, () => ({ cells: Array(COLS).fill(null), word: null, course: 0 })),
-    used: {},
-    specials: [...pick(SPECIALS4, 2), ...pick(SPECIALS5, 1)].map(w => ({ w, by: null })),
-    log: [],
-    msg: null,
-    over: false,
-    newBest: false,
-    history: [],
-  };
+function addDays(ds, n) {
+  const [y, m, d] = ds.split("-").map(Number);
+  return dateStr(new Date(y, m - 1, d + n));
+}
+function dailyNumber(ds) {
+  const [y, m, d] = ds.split("-").map(Number);
+  return Math.round((Date.UTC(y, m - 1, d) - DAILY_EPOCH) / 864e5) + 1;
+}
+function untilMidnight() {
+  const now = new Date();
+  const mid = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const mins = Math.max(1, Math.ceil((mid - now) / 60000));
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h ? h + "h " + m + "m" : m + "m";
 }
 
 /* ---------- Storage (this phone only) ---------- */
 
 function readJSON(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } }
 function writeJSON(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
-function save() { writeJSON(STORE_KEY, state); }
-function load() {
-  const s = readJSON(STORE_KEY);
-  return s && s.deck && s.rows && s.mode ? s : null;
+function removeKey(key) { try { localStorage.removeItem(key); } catch (e) {} }
+
+const slotKey = s => (s.mode === "daily" ? KEY.daily(s.date) : KEY.game);
+function save() {
+  writeJSON(slotKey(state), state);
+  writeJSON(KEY.active, state.mode === "daily" ? "daily" : "game");
 }
+const validGame = s => s && s.deck && s.rows && s.mode && s.rowLog;
+function loadGame() { const s = readJSON(KEY.game); return validGame(s) ? s : null; }
+function loadDaily(date = dateStr()) { const s = readJSON(KEY.daily(date)); return validGame(s) ? s : null; }
+function load() {
+  if (readJSON(KEY.active) === "daily") {
+    const d = loadDaily();
+    if (d) return d;
+  }
+  return loadGame();
+}
+
 function prefs() {
-  const p = readJSON(STORE_KEY + "-prefs");
+  const p = readJSON(KEY.prefs);
   return p && p.names ? p : { mode: "duo", names: ["Seat 1", "Seat 2"], solo: "You" };
 }
-const bestScore = () => readJSON(STORE_KEY + "-best") || 0;
+
+const STATS_DEFAULT = {
+  played: { solo: 0, duo: 0, daily: 0 }, bestSolo: 0, bestDaily: 0,
+  bestDish: null, longest: null, served: 0, sentBack: 0, specials: 0,
+  streak: 0, maxStreak: 0, lastDaily: null,
+};
+function getStats() {
+  const s = readJSON(KEY.stats);
+  if (s && s.played) return { ...STATS_DEFAULT, ...s, played: { ...STATS_DEFAULT.played, ...s.played } };
+  const fresh = JSON.parse(JSON.stringify(STATS_DEFAULT));
+  fresh.bestSolo = readJSON(STORE_KEY + "-best") || 0; // best score saved by earlier versions
+  return fresh;
+}
+function currentStreak(st) {
+  const today = dateStr();
+  return st.lastDaily === today || st.lastDaily === addDays(today, -1) ? st.streak : 0;
+}
+
+const SETTINGS_DEFAULT = { sound: true, haptics: true, theme: "auto" };
+function getSettings() { return { ...SETTINGS_DEFAULT, ...(readJSON(KEY.settings) || {}) }; }
+function setSetting(k, v) { const s = getSettings(); s[k] = v; writeJSON(KEY.settings, s); applyTheme(); }
+function applyTheme() {
+  const t = getSettings().theme;
+  const root = document.documentElement;
+  if (t === "light" || t === "dark") root.setAttribute("data-theme", t);
+  else if (HOST_THEME) root.setAttribute("data-theme", HOST_THEME);
+  else root.removeAttribute("data-theme");
+}
+
+/* ---------- Sound and vibration ---------- */
+
+let actx = null;
+function audio() {
+  if (!actx) {
+    const C = window.AudioContext || window.webkitAudioContext;
+    if (!C) return null;
+    actx = new C();
+  }
+  if (actx.state === "suspended") actx.resume();
+  return actx;
+}
+function tone(freq, start, dur, { type = "sine", gain = 0.12, slide = null } = {}) {
+  const a = audio();
+  if (!a) return;
+  const t = a.currentTime + start;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination);
+  o.start(t);
+  o.stop(t + dur + 0.02);
+}
+const SOUNDS = {
+  place: () => tone(540, 0, 0.07, { type: "triangle", gain: 0.1 }),
+  serve: () => { tone(1318, 0, 0.35, { gain: 0.08 }); tone(1976, 0.05, 0.4, { gain: 0.05 }); },
+  special: () => [1046, 1318, 1568, 2093].forEach((f, i) => tone(f, i * 0.07, 0.4, { gain: 0.07 })),
+  sent: () => tone(190, 0, 0.24, { type: "square", gain: 0.04, slide: 85 }),
+  skip: () => tone(330, 0, 0.12, { type: "triangle", gain: 0.06, slide: 210 }),
+  end: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, i * 0.11, 0.5, { gain: 0.06 })),
+};
+const BUZZ = { place: 8, serve: [12, 40, 12], special: [15, 40, 15, 40, 30], sent: [60, 40, 60], skip: 6, end: [20, 60, 20, 60, 40] };
+function feedback(kind) {
+  const s = getSettings();
+  if (s.sound) { try { SOUNDS[kind](); } catch (e) {} }
+  if (s.haptics && navigator.vibrate) { try { navigator.vibrate(BUZZ[kind]); } catch (e) {} }
+}
+
+/* ---------- Game setup ---------- */
+
+function newDeck(rnd) {
+  // 52 letters: 20 vowels, common consonants, and one rare letter.
+  const base = "EEEEEEAAAAIIIIOOOOUUTTTNNNRRRSSSLLLDDCCMMPPHGBFWYKV".split("");
+  base.push(pick(["J", "Q", "X", "Z"], 1, rnd)[0]);
+  return shuffle(base.map(c => c.toLowerCase()), rnd);
+}
+
+function newGame(mode, names, date = null) {
+  const rnd = mode === "daily" ? seeded("small-plates/" + date) : Math.random;
+  const deck = newDeck(rnd);
+  const specials = [...pick(SPECIALS4, 2, rnd), ...pick(SPECIALS5, 1, rnd)].map(w => ({ w, by: null }));
+  return {
+    mode, names, date,
+    scores: [0, 0],
+    turn: 0,
+    deck, pos: 0,
+    rows: Array.from({ length: ROWS }, () => ({ cells: Array(COLS).fill(null), word: null, course: 0 })),
+    rowLog: Array.from({ length: ROWS }, () => []),
+    used: {},
+    specials,
+    log: [],
+    maxCourse: { n: 0, w: "" },
+    msg: null,
+    over: false,
+    recorded: false,
+    newBest: false,
+    history: [],
+  };
+}
 
 function snapshot() {
+  if (state.mode === "daily") return; // no undo in the Daily Table
   state.history.push(JSON.parse(JSON.stringify({ ...state, history: [] })));
   if (state.history.length > 30) state.history.shift();
 }
 
-const solo = () => state.mode === "solo";
+const solo = () => state.mode !== "duo";
+const daily = () => state.mode === "daily";
 const current = () => state.deck[state.pos];
 const rowWord = row => row.cells.filter(Boolean).map(x => x.ch).join("");
 const letterSum = w => [...w].reduce((s, c) => s + VALUES[c], 0);
@@ -606,35 +816,41 @@ function place(r, c) {
   if (w.length < 3) {
     state.msg = { kind: "info", p, text: w.length === 1 ? "started a new plate with" : "is still cooking", word: w };
     flash = { r, c, kind: "pop" };
+    feedback("place");
     return finishMove(false);
   }
 
   if (DICT.has(w)) {
     const course = row.word ? row.course + 1 : 1;
     row.word = w; row.course = course;
-    let pts = 0, note = "";
+    if (course > state.maxCourse.n) state.maxCourse = { n: course, w };
+    let pts = 0, note = "", special = false;
     if (state.used[w] !== undefined) {
       note = "already served, no points";
     } else {
       pts = letterSum(w) * LEN_MULT[w.length] + COURSE_BONUS * (course - 1);
       const sp = state.specials.find(s => s.w === w && s.by === null);
-      if (sp) { sp.by = p; pts += SPECIAL_BONUS[w.length]; note = "a special!"; }
+      if (sp) { sp.by = p; pts += SPECIAL_BONUS[w.length]; note = "a special!"; special = true; }
       else if (course > 1) note = "course " + course;
       state.used[w] = p;
     }
     state.scores[p] += pts;
+    state.rowLog[r].push("g");
     state.log.push({ p, w, pts, kind: "word" });
     state.msg = { kind: "good", p, word: w, pts, note };
     flash = { r, c, kind: "pop" };
+    feedback(special ? "special" : "serve");
     return finishMove(true);
   }
 
   // Not a word: sent back to the kitchen.
   state.scores[p] -= SENT_BACK;
+  state.rowLog[r].push("s");
   state.log.push({ p, w, pts: -SENT_BACK, kind: "sent" });
   state.msg = { kind: "sent", p, word: w, pts: -SENT_BACK };
   state.rows[r] = { cells: Array(COLS).fill(null), word: null, course: 0 };
   flash = { r, c: -1, kind: "shake" };
+  feedback("sent");
   finishMove(true);
 }
 
@@ -643,6 +859,7 @@ function skip() {
   snapshot();
   state.msg = { kind: "info", p: state.turn, text: "skipped", word: current() };
   state.pos++;
+  feedback("skip");
   finishMove(true);
 }
 
@@ -650,24 +867,45 @@ function finishMove(endTurn) {
   if (endTurn && !solo()) state.turn = 1 - state.turn;
   if (state.pos >= state.deck.length) {
     state.over = true;
-    if (solo() && state.scores[0] > bestScore()) {
-      writeJSON(STORE_KEY + "-best", state.scores[0]);
-      state.newBest = true;
-    }
+    recordGame();
   }
   save();
   render();
-  if (state.over) showEnd();
+  if (state.over) { setTimeout(() => feedback("end"), 250); showEnd(); }
 }
 
 function undo() {
+  if (state.over || daily()) return;
   const prev = state.history.pop();
   if (!prev) return;
   state = { ...prev, history: state.history };
   state.msg = { kind: "info", p: state.turn, text: "took back the last move", word: "" };
   save();
-  $("end").hidden = true;
   render();
+}
+
+function recordGame() {
+  if (state.recorded) return;
+  state.recorded = true;
+  const st = getStats();
+  st.played[state.mode] = (st.played[state.mode] || 0) + 1;
+  const words = state.log.filter(x => x.kind === "word");
+  st.served += words.length;
+  st.sentBack += state.log.filter(x => x.kind === "sent").length;
+  st.specials += state.specials.filter(s => s.by !== null).length;
+  words.forEach(x => { if (!st.bestDish || x.pts > st.bestDish.pts) st.bestDish = { w: x.w, pts: x.pts }; });
+  if (!st.longest || state.maxCourse.n > st.longest.n) st.longest = { ...state.maxCourse };
+  const score = state.scores[0];
+  if (state.mode === "solo" && score > st.bestSolo) { st.bestSolo = score; state.newBest = true; }
+  if (state.mode === "daily") {
+    if (score > st.bestDaily) { st.bestDaily = score; state.newBest = true; }
+    if (st.lastDaily !== state.date) {
+      st.streak = st.lastDaily === addDays(state.date, -1) ? st.streak + 1 : 1;
+      st.maxStreak = Math.max(st.maxStreak, st.streak);
+      st.lastDaily = state.date;
+    }
+  }
+  writeJSON(KEY.stats, st);
 }
 
 /* ---------- Rendering ---------- */
@@ -680,27 +918,30 @@ function el(tag, cls, text) {
 }
 const pColor = p => (p === 0 ? "var(--p1)" : "var(--p2)");
 const upper = s => (s || "").toUpperCase();
+const fmt = n => Number(n).toLocaleString("en-US");
 
 function render() {
   const s = state, p = s.turn, one = solo();
+  const st = getStats();
   document.documentElement.style.setProperty("--pc", pColor(p));
-  $("tableSize").textContent = one ? "for one" : "for two";
+  $("tableSize").textContent = daily() ? "daily #" + dailyNumber(s.date) : one ? "for one" : "for two";
 
   // The bill
   $("name0").textContent = s.names[0];
-  $("score0").textContent = s.scores[0];
-  $("turn0").textContent = one ? "Playing solo" : "You're up";
+  $("score0").textContent = fmt(s.scores[0]);
+  $("turn0").textContent = daily() ? "Daily Table" : one ? "Playing solo" : "You're up";
   $("card0").classList.toggle("active", !s.over && (one || p === 0));
   const c1 = $("card1");
   c1.classList.toggle("best", one);
   c1.classList.toggle("active", !one && !s.over && p === 1);
   if (one) {
-    $("name1").textContent = "Your best";
-    $("score1").textContent = Math.max(bestScore(), 0) || "–";
-    $("turn1").textContent = "on this phone";
+    const best = daily() ? st.bestDaily : st.bestSolo;
+    $("name1").textContent = daily() ? "Daily best" : "Your best";
+    $("score1").textContent = best ? fmt(best) : "–";
+    $("turn1").textContent = daily() ? currentStreak(st) + " day streak" : "on this phone";
   } else {
     $("name1").textContent = s.names[1];
-    $("score1").textContent = s.scores[1];
+    $("score1").textContent = fmt(s.scores[1]);
     $("turn1").textContent = "You're up";
   }
   $("deckCount").textContent = s.deck.length - s.pos;
@@ -783,7 +1024,9 @@ function render() {
     msg.append(line);
     if (m.pts !== undefined) msg.append(el("span", "pts", (m.pts > 0 ? "+" : "") + m.pts));
   } else {
-    msg.append(el("span", "", "Tap a spot on any plate to put the letter down."));
+    msg.append(el("span", "", daily()
+      ? "Same letters for everyone today. One try, no undo."
+      : "Tap a spot on any plate to put the letter down."));
   }
 
   // Order ticket
@@ -804,7 +1047,8 @@ function render() {
     $("next").append(nx ? el("span", "mini", upper(nx)) : el("span", "", "nothing, this is the last one"));
   }
   $("passBtn").disabled = s.over;
-  $("undoBtn").disabled = !s.history.length;
+  $("undoBtn").hidden = daily();
+  $("undoBtn").disabled = s.over || !s.history.length;
 
   // Dishes served
   const log = $("log");
@@ -832,6 +1076,25 @@ function render() {
   });
 }
 
+/* ---------- Overlays ---------- */
+
+const OVERLAYS = ["intro", "setup", "end", "menu", "page"];
+function showOverlay(id) {
+  OVERLAYS.forEach(o => { $(o).hidden = o !== id; });
+  if (id) {
+    const focusable = $(id).querySelector(".btn.primary, [data-close], button, input");
+    if (focusable) focusable.focus({ preventScroll: true });
+  }
+}
+function closeOverlays() {
+  showOverlay(null);
+  stopCountdown();
+}
+document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", closeOverlays));
+OVERLAYS.forEach(id => $(id).addEventListener("click", e => {
+  if (e.target === $(id) && (id === "menu" || id === "page")) closeOverlays();
+}));
+
 function bestDish(i) {
   const d = el("div", "bestw");
   const best = state.log.filter(x => x.p === i && x.kind === "word" && x.pts > 0).sort((x, y) => y.pts - x.pts)[0];
@@ -840,17 +1103,70 @@ function bestDish(i) {
   return d;
 }
 
+function shareText() {
+  const s = state;
+  const plates = s.rowLog.map(r => (r.length ? r.map(x => (x === "s" ? "🟥" : "🟩")).join("") : "⬜"));
+  const stars = s.specials.map(x => (x.by !== null ? "⭐" : "☆")).join("");
+  return "Small Plates · Daily Table #" + dailyNumber(s.date) + "\n" +
+    "🍽️ " + fmt(s.scores[0]) + " points\n" +
+    plates.join("\n") + "\n" +
+    "Specials " + stars + "\n" + SITE_URL;
+}
+
+async function shareResult() {
+  const text = shareText();
+  const btn = $("againBtn");
+  if (navigator.share) {
+    try { await navigator.share({ text }); return; }
+    catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = "Copied!";
+  } catch (e) {
+    const range = document.createRange();
+    range.selectNodeContents($("shareCard"));
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    btn.textContent = "Selected, copy it";
+  }
+  setTimeout(() => { if (state.mode === "daily") btn.textContent = "Share"; }, 2500);
+}
+
+let countdownTimer = null;
+function stopCountdown() { if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; } }
+
 function showEnd() {
   const s = state;
+  const st = getStats();
   const fin = $("final");
   fin.replaceChildren();
-  if (solo()) {
-    $("endTitle").textContent = s.newBest ? "New best score!" : "Check, please!";
-    $("endNote").textContent = s.newBest ? "That's your best yet on this phone." : "Your best on this phone is " + bestScore() + ".";
+  $("shareCard").hidden = true;
+  $("againBtn").textContent = "Another round";
+  stopCountdown();
+  if (daily()) {
+    const num = dailyNumber(s.date);
+    $("endTitle").textContent = s.newBest ? "Daily Table #" + num + ": your best yet!" : "Daily Table #" + num + " is served";
+    const tick = () => { $("endNote").textContent = "A new Daily Table opens in " + untilMidnight() + "."; };
+    tick();
+    countdownTimer = setInterval(tick, 30000);
     const card = el("div", "player");
-    card.append(el("div", "pname", "Tonight"), el("div", "pscore", String(s.scores[0])), bestDish(0));
+    card.append(el("div", "pname", "Today"), el("div", "pscore", fmt(s.scores[0])), bestDish(0));
+    const streak = el("div", "player best");
+    streak.append(el("div", "pname", "Streak"), el("div", "pscore", String(currentStreak(st))),
+      el("div", "bestw", "days in a row · best " + st.maxStreak));
+    fin.append(card, streak);
+    $("shareCard").textContent = shareText();
+    $("shareCard").hidden = false;
+    $("againBtn").textContent = "Share";
+  } else if (solo()) {
+    $("endTitle").textContent = s.newBest ? "New best score!" : "Check, please!";
+    $("endNote").textContent = s.newBest ? "That's your best yet on this phone." : "Your best on this phone is " + fmt(st.bestSolo) + ".";
+    const card = el("div", "player");
+    card.append(el("div", "pname", "Tonight"), el("div", "pscore", fmt(s.scores[0])), bestDish(0));
     const best = el("div", "player best");
-    best.append(el("div", "pname", "Your best"), el("div", "pscore", String(bestScore())));
+    best.append(el("div", "pname", "Your best"), el("div", "pscore", fmt(st.bestSolo)));
     fin.append(card, best);
   } else {
     const [a, b] = s.scores;
@@ -858,14 +1174,14 @@ function showEnd() {
     $("endNote").textContent = "";
     [0, 1].forEach(i => {
       const card = el("div", "player" + (i ? " p2" : ""));
-      card.append(el("div", "pname", s.names[i]), el("div", "pscore", String(s.scores[i])), bestDish(i));
+      card.append(el("div", "pname", s.names[i]), el("div", "pscore", fmt(s.scores[i])), bestDish(i));
       fin.append(card);
     });
   }
-  $("end").hidden = false;
+  showOverlay("end");
 }
 
-/* ---------- New table ---------- */
+/* ---------- New table and Daily Table ---------- */
 
 function setupMode() { return $("modeSolo").checked ? "solo" : "duo"; }
 function syncSetup() {
@@ -876,16 +1192,35 @@ function syncSetup() {
 
 function openSetup(first) {
   const pr = prefs();
-  const mode = state ? state.mode : pr.mode;
+  const mode = state && state.mode !== "daily" ? state.mode : pr.mode;
   $(mode === "solo" ? "modeSolo" : "modeDuo").checked = true;
-  $("in0").value = mode === "solo" ? (state ? state.names[0] : pr.solo) : (state && state.mode === "duo" ? state.names[0] : pr.names[0]);
-  $("in1").value = state && state.mode === "duo" ? state.names[1] : pr.names[1];
-  const midGame = state && !state.over && state.pos > 0;
-  $("setupNote").textContent = midGame ? "This ends the game you're playing now." : "Names stay on this phone.";
+  $("in0").value = mode === "solo" ? pr.solo : pr.names[0];
+  $("in1").value = pr.names[1];
+  const g = loadGame();
+  const midGame = g && !g.over && g.pos > 0;
+  $("setupNote").textContent = midGame ? "This replaces your unfinished table." : "Names stay on this phone.";
   $("cancelSetup").hidden = !!first;
   syncSetup();
-  $("setup").hidden = false;
-  $("end").hidden = true;
+  showOverlay("setup");
+}
+
+function startDaily() {
+  const today = dateStr();
+  state = loadDaily(today) || newGame("daily", [prefs().solo || "You", ""], today);
+  save();
+  render();
+  if (state.over) showEnd();
+  else closeOverlays();
+}
+
+function resumeGame() {
+  const g = loadGame();
+  if (!g) return openSetup(false);
+  state = g;
+  save();
+  render();
+  if (state.over) showEnd();
+  else closeOverlays();
 }
 
 document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener("change", () => {
@@ -907,24 +1242,181 @@ $("setupForm").addEventListener("submit", e => {
     pr.names = names;
   }
   pr.mode = mode;
-  writeJSON(STORE_KEY + "-prefs", pr);
+  writeJSON(KEY.prefs, pr);
   state = newGame(mode, names);
-  $("setup").hidden = true;
   save();
   render();
+  closeOverlays();
 });
-$("cancelSetup").addEventListener("click", () => { $("setup").hidden = true; if (state && state.over) showEnd(); });
-$("newBtn").addEventListener("click", () => openSetup(false));
+$("setupDaily").addEventListener("click", startDaily);
+$("cancelSetup").addEventListener("click", () => { closeOverlays(); if (state && state.over) showEnd(); });
 $("passBtn").addEventListener("click", skip);
 $("undoBtn").addEventListener("click", undo);
 $("againBtn").addEventListener("click", () => {
+  if (daily()) return shareResult();
   // With two players, swap who goes first each round.
   state = newGame(state.mode, solo() ? state.names : state.names.slice().reverse());
-  $("end").hidden = true;
   save();
   render();
+  closeOverlays();
 });
-$("seeBoard").addEventListener("click", () => { $("end").hidden = true; });
+$("seeBoard").addEventListener("click", closeOverlays);
+
+/* ---------- Menu ---------- */
+
+function menuItem(name, sub, onClick, feature) {
+  const b = el("button", "menu-item" + (feature ? " feature" : ""));
+  b.type = "button";
+  b.append(el("span", "mi-name", name));
+  if (sub) b.append(typeof sub === "string" ? el("span", "mi-sub", sub) : sub);
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+function openMenu() {
+  const list = $("menuList");
+  list.replaceChildren();
+  const today = dateStr();
+  const d = loadDaily(today);
+  const dailySub = el("span", "mi-sub");
+  dailySub.append(el("span", "pill", d ? (d.over ? "Served · " + fmt(d.scores[0]) : "In progress") : "New today"));
+  list.append(menuItem("Daily Table #" + dailyNumber(today), dailySub, startDaily, true));
+  const g = loadGame();
+  if (daily() && g && !g.over && g.pos > 0) {
+    list.append(menuItem("Back to your table", (g.mode === "duo" ? "For two" : "For one") + " · " + (g.deck.length - g.pos) + " letters left", resumeGame));
+  }
+  list.append(
+    menuItem("New table", "For one or two", () => openSetup(false)),
+    menuItem("Your stats", "On this phone", () => openPage("stats")),
+    menuItem("How to play", "", () => openIntro(true)),
+    menuItem("Settings", "", () => openPage("settings")),
+    menuItem("About", "", () => openPage("about")),
+  );
+  showOverlay("menu");
+}
+$("menuBtn").addEventListener("click", openMenu);
+
+/* ---------- Stats, settings, about ---------- */
+
+function tile(k, val, sub, opts = {}) {
+  const t = el("div", "tile" + (opts.wide ? " wide" : ""));
+  t.append(el("div", "k", k), el("div", "val" + (opts.word ? " word" : ""), val));
+  if (sub) t.append(el("div", "sub", sub));
+  return t;
+}
+
+let resetArmed = false;
+function renderStats(body) {
+  const st = getStats();
+  const total = st.played.solo + st.played.duo + st.played.daily;
+  const grid = el("div", "stats-grid");
+  grid.append(
+    tile("Games played", fmt(total), st.played.solo + " solo · " + st.played.duo + " for two · " + st.played.daily + " daily", { wide: true }),
+    tile("Best solo", st.bestSolo ? fmt(st.bestSolo) : "–"),
+    tile("Best daily", st.bestDaily ? fmt(st.bestDaily) : "–"),
+    tile("Daily streak", String(currentStreak(st)), "Best " + st.maxStreak),
+    tile("Specials", fmt(st.specials), "served"),
+    tile("Best dish", st.bestDish ? upper(st.bestDish.w) : "–", st.bestDish ? st.bestDish.pts + " points" : "Serve a word to start", { word: !!st.bestDish }),
+    tile("Longest chain", st.longest && st.longest.n ? st.longest.n + " courses" : "–", st.longest && st.longest.n ? "ending in " + upper(st.longest.w) : ""),
+    tile("Words served", fmt(st.served)),
+    tile("Sent back", fmt(st.sentBack)),
+  );
+  const note = el("p", "", "Stats count finished games on this phone.");
+  const reset = el("button", "btn danger", "Reset stats");
+  reset.type = "button";
+  resetArmed = false;
+  reset.addEventListener("click", () => {
+    if (!resetArmed) { resetArmed = true; reset.textContent = "Tap again to erase all stats"; return; }
+    removeKey(KEY.stats);
+    removeKey(STORE_KEY + "-best");
+    openPage("stats");
+  });
+  const actions = el("div", "actions");
+  actions.style.justifyContent = "flex-start";
+  actions.append(reset);
+  body.append(grid, note, actions);
+}
+
+function switchRow(id, label, hint, checked, onChange) {
+  const row = el("div", "setting");
+  const text = el("label", "st-text", label);
+  text.htmlFor = id;
+  if (hint) text.append(el("small", "", hint));
+  const sw = el("span", "switch");
+  const input = el("input");
+  input.type = "checkbox";
+  input.id = id;
+  input.checked = checked;
+  input.setAttribute("role", "switch");
+  input.addEventListener("change", () => onChange(input.checked));
+  sw.append(input, el("span"));
+  row.append(text, sw);
+  return row;
+}
+
+function renderSettings(body) {
+  const s = getSettings();
+  body.append(
+    switchRow("setSound", "Sounds", "A clink when a dish is served", s.sound, v => { setSetting("sound", v); if (v) feedback("serve"); }),
+    switchRow("setHaptics", "Vibration", navigator.vibrate ? "A little buzz on each move" : "Not supported on this phone", s.haptics, v => { setSetting("haptics", v); if (v) feedback("place"); }),
+  );
+  const fs = el("fieldset", "seg three");
+  fs.style.marginTop = "14px";
+  fs.append(el("legend", "", "Look"));
+  [["auto", "Automatic"], ["light", "Light"], ["dark", "Dark"]].forEach(([v, label]) => {
+    const l = el("label");
+    const input = el("input");
+    input.type = "radio";
+    input.name = "theme";
+    input.value = v;
+    input.id = "theme-" + v;
+    input.checked = s.theme === v;
+    input.addEventListener("change", () => setSetting("theme", v));
+    l.append(input, el("span", "", label));
+    fs.append(l);
+  });
+  const again = el("button", "linkish", "Show the welcome screen again");
+  again.type = "button";
+  again.style.marginTop = "16px";
+  again.addEventListener("click", () => openIntro(false, true));
+  body.append(fs, again);
+}
+
+function renderAbout(body) {
+  const wrap = el("div", "about");
+  wrap.style.display = "flex";
+  wrap.style.flexDirection = "column";
+  wrap.style.gap = "10px";
+  const head = el("div", "about-head");
+  const words = el("div");
+  words.append(el("h3", "", "Small Plates"), el("p", "muted", "Version " + APP_VERSION));
+  head.append(el("div", "logo", "S"), words);
+  const link = el("a", "", "github.com/DotAwkward/small-plates");
+  link.href = "https://github.com/DotAwkward/small-plates";
+  link.target = "_blank";
+  link.rel = "noopener";
+  const code = el("p", "muted", "The code is open: ");
+  code.append(link);
+  wrap.append(
+    head,
+    el("p", "", "A word game for one or two, made for waiting on dinner. Build words one letter at a time, then keep turning them into new ones."),
+    el("h3", "", "Your privacy"),
+    el("p", "", "Small Plates doesn't collect anything about you. There are no accounts, ads or trackers. Your games, names, stats and settings are saved only on this phone, and clearing your browser data or deleting the app erases them."),
+    el("h3", "", "Thanks"),
+    el("p", "muted", "Inspired by Moxie, the 2009 iPod touch word game by Daisy Wheels. Words come from the public-domain ENABLE word list. Fonts are Young Serif, Figtree, Caveat and Archivo Black, under the SIL Open Font License."),
+    code,
+  );
+  body.append(wrap);
+}
+
+function openPage(which) {
+  const titles = { stats: "Your stats", settings: "Settings", about: "About" };
+  $("pageTitle").textContent = titles[which];
+  const body = $("pageBody");
+  body.replaceChildren();
+  ({ stats: renderStats, settings: renderSettings, about: renderAbout })[which](body);
+  showOverlay("page");
+}
 
 /* ---------- Intro and How to play ---------- */
 
@@ -984,7 +1476,7 @@ const SLIDES = [
   },
   {
     title: "Order the specials",
-    text: "Spell one of today's specials for a big bonus. Play a table for one to beat your best score, or a table for two and pass the phone after every word.",
+    text: "Spell one of today's specials for a big bonus. Play for one to beat your best, pass the phone with two, or try the Daily Table: the same letters for everyone, once a day.",
     demo: () => {
       const board = el("div", "specials");
       board.append(el("h2", "", "Today's specials"));
@@ -994,9 +1486,11 @@ const SLIDES = [
         board.append(s);
       });
       const modes = el("div", "demo-modes");
-      const one = el("div", "", "For one"); one.append(el("small", "", "Beat your best"));
-      const two = el("div", "", "For two"); two.append(el("small", "", "Take turns"));
-      modes.append(one, two);
+      [["For one", "Beat your best"], ["For two", "Take turns"], ["Daily", "Once a day"]].forEach(([a, b]) => {
+        const m = el("div", "", a);
+        m.append(el("small", "", b));
+        modes.append(m);
+      });
       const stack = el("div", "demo-stack");
       stack.style.width = "100%";
       stack.style.alignItems = "stretch";
@@ -1008,6 +1502,7 @@ const SLIDES = [
 
 let introStep = 0;
 let introFromHelp = false;
+let introReplay = false;
 
 function renderIntro() {
   const body = $("introBody");
@@ -1033,22 +1528,24 @@ function renderIntro() {
   dots.replaceChildren();
   for (let i = first; i <= SLIDES.length; i++) dots.append(el("span", i === introStep ? "on" : ""));
   const last = introStep === SLIDES.length;
-  $("introBack").textContent = introStep === first ? (introFromHelp ? "Close" : "Skip") : "Back";
-  $("introNext").textContent = introStep === 0 ? "Show me how" : last ? (introFromHelp ? "Back to the table" : "Pick a table") : "Next";
+  const finishing = introFromHelp || introReplay;
+  $("introBack").textContent = introStep === first ? (finishing ? "Close" : "Skip") : "Back";
+  $("introNext").textContent = introStep === 0 ? "Show me how" : last ? (finishing ? "Back to the table" : "Pick a table") : "Next";
 }
 
-function openIntro(fromHelp) {
+function openIntro(fromHelp, replay = false) {
   introFromHelp = fromHelp;
+  introReplay = replay;
   introStep = fromHelp ? 1 : 0;
   renderIntro();
-  $("intro").hidden = false;
-  $("introNext").focus();
+  showOverlay("intro");
+  $("introNext").focus({ preventScroll: true });
 }
 
 function closeIntro() {
-  $("intro").hidden = true;
-  writeJSON(STORE_KEY + "-intro", true);
-  if (!introFromHelp && !load()) openSetup(true);
+  writeJSON(KEY.intro, true);
+  if (!introFromHelp && !introReplay && !load()) openSetup(true);
+  else closeOverlays();
 }
 
 function introGo(delta) {
@@ -1063,10 +1560,13 @@ $("introNext").addEventListener("click", () => introGo(1));
 $("introBack").addEventListener("click", () => (introStep === (introFromHelp ? 1 : 0) ? closeIntro() : introGo(-1)));
 $("helpBtn").addEventListener("click", () => openIntro(true));
 document.addEventListener("keydown", e => {
-  if ($("intro").hidden) return;
-  if (e.key === "ArrowRight") introGo(1);
-  else if (e.key === "ArrowLeft" && introStep > (introFromHelp ? 1 : 0)) introGo(-1);
-  else if (e.key === "Escape") closeIntro();
+  if (!$("intro").hidden) {
+    if (e.key === "ArrowRight") introGo(1);
+    else if (e.key === "ArrowLeft" && introStep > (introFromHelp ? 1 : 0)) introGo(-1);
+    else if (e.key === "Escape") closeIntro();
+  } else if (e.key === "Escape" && (!$("menu").hidden || !$("page").hidden)) {
+    closeOverlays();
+  }
 });
 // Swipe between cards.
 let touchX = null;
@@ -1080,13 +1580,28 @@ $("introSheet").addEventListener("touchend", e => {
   else if (dx > 0 && introStep > (introFromHelp ? 1 : 0)) introGo(-1);
 });
 
+/* ---------- Start ---------- */
+
+function migrate() {
+  // Earlier versions kept the one game under STORE_KEY.
+  const old = readJSON(STORE_KEY);
+  if (old && old.deck && !readJSON(KEY.game)) {
+    old.rowLog = old.rowLog || Array.from({ length: ROWS }, () => []);
+    old.maxCourse = old.maxCourse || { n: 0, w: "" };
+    writeJSON(KEY.game, old);
+  }
+  if (old) removeKey(STORE_KEY);
+}
+
 function start(data) {
-  state = (data && data.state && data.state.mode && data.state) || load();
+  migrate();
+  applyTheme();
+  state = (data && validGame(data.state) && data.state) || load();
   if (!state) {
     const pr = prefs();
     state = newGame(pr.mode, pr.mode === "solo" ? [pr.solo, ""] : pr.names);
     render();
-    if (readJSON(STORE_KEY + "-intro")) openSetup(true);
+    if (readJSON(KEY.intro)) openSetup(true);
     else openIntro(false);
     return;
   }

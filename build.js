@@ -23,7 +23,10 @@ const themed = [
 const s4 = themed.filter(w => w.length === 4);
 const s5 = themed.filter(w => w.length === 5);
 
-const page = fs.readFileSync(path.join(dir, "game.template.html"), "utf8")
+const template = fs.readFileSync(path.join(dir, "game.template.html"), "utf8");
+const appVersion = "1.1 · " + crypto.createHash("sha1").update(template).digest("hex").slice(0, 7);
+const page = template
+  .replace("__APPVERSION__", () => appVersion)
   .replace("__WORDS__", () => words.join(" "))
   .replace("__SPECIALS4__", () => JSON.stringify(s4))
   .replace("__SPECIALS5__", () => JSON.stringify(s5));
