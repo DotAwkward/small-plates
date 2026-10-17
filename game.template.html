@@ -449,6 +449,44 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 .share-card { background: var(--bg); border-radius: 12px; padding: 12px 14px; white-space: pre-wrap; font: 0.95rem/1.35 var(--font-body); margin: 0; overflow-wrap: anywhere; }
 .btn.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
 
+/* Home screen */
+.home {
+  max-width: 460px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 32px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.home-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding-top: 6px; }
+.home-hero h1 { margin: 8px 0 0; font-family: var(--font-display); font-weight: 400; font-size: 2.3rem; line-height: 1; text-wrap: balance; }
+.home-hero .tag { font-family: var(--font-chalk); font-weight: 700; font-size: 1.35rem; color: var(--rim); line-height: 1.2; }
+.home-cards { display: flex; flex-direction: column; gap: 10px; }
+.hcard {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; text-align: left; border: 0; border-radius: 16px; padding: 14px 16px; cursor: pointer;
+}
+.hcard .ht { font-family: var(--font-display); font-size: 1.2rem; line-height: 1.15; }
+.hcard .hs { font-size: 0.85rem; opacity: 0.92; margin-top: 3px; }
+.hcard .arrow { font-size: 1.3rem; flex-shrink: 0; }
+.hcard.continue { background: var(--p1); color: var(--surface); }
+.hcard.daily { background: var(--chalk-bg); color: var(--chalk); }
+.hcard.daily .ht { font-family: var(--font-chalk); font-weight: 700; font-size: 1.5rem; }
+.hcard.daily .pill { background: var(--saffron); color: var(--chalk-bg); flex-shrink: 0; }
+.hcard:hover { filter: brightness(1.05); }
+.modes-h { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.home-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mode-btn {
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 6px;
+  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;
+}
+.mode-btn:hover { border-color: var(--rim); }
+.mode-btn b { font-family: var(--font-display); font-weight: 400; font-size: 1.05rem; }
+.mode-btn small { color: var(--muted); font-size: 0.72rem; line-height: 1.2; }
+.home-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 16px; border-top: 1.5px dashed var(--line); padding-top: 12px; }
+.home-links button { background: none; border: 0; color: var(--muted); font-weight: 600; font-size: 0.9rem; cursor: pointer; padding: 6px 2px; }
+.home-links button:hover { color: var(--ink); }
+.home-signoff { display: flex; justify-content: center; }
+
 /* Add to home screen */
 .install {
   display: flex; align-items: center; gap: 8px;
@@ -491,7 +529,15 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 
 <template id="daSignoff"><!--da-signoff--></template>
 
-<div class="app">
+<main class="home" id="home" hidden aria-label="Small Plates home">
+  <div id="homeInstall"></div>
+  <div class="home-hero" id="homeHero"></div>
+  <div class="home-cards" id="homeCards"></div>
+  <nav class="home-links" id="homeLinks" aria-label="More"></nav>
+  <div class="home-signoff" id="homeSignoff"></div>
+</main>
+
+<div class="app" id="game" hidden>
   <header class="top">
     <div class="brand"><h1>Small Plates</h1><span id="tableSize">for two</span></div>
     <div class="top-actions">
@@ -500,11 +546,13 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
     </div>
   </header>
 
+  <div id="appInstall">
   <div class="install" id="installBar" hidden>
     <div class="install-text"><b>Put Small Plates on your home screen</b><span id="installHow">It opens full screen and works offline.</span></div>
     <button class="btn primary" id="installBtn" type="button">Install</button>
     <button class="btn" id="installHelp" type="button">Show me</button>
     <button class="ghost round" id="installClose" type="button" aria-label="Not now">×</button>
+  </div>
   </div>
 
   <section class="scores" aria-label="Scores">
@@ -1328,7 +1376,7 @@ function syncSetup() {
   $("in0Label").textContent = one ? "Your name" : "Goes first";
 }
 
-function openSetup(first) {
+function openSetup(first, preset) {
   const pr = prefs();
   const mode = state && state.mode !== "daily" ? state.mode : pr.mode;
   $(mode === "solo" ? "modeSolo" : "modeDuo").checked = true;
@@ -1337,6 +1385,11 @@ function openSetup(first) {
   const g = loadGame();
   const midGame = g && !g.over && g.pos > 0;
   $("endlessIn").checked = state && state.mode !== "daily" ? !!state.endless : !!pr.endless;
+  if (preset) {
+    if (preset.mode) $(preset.mode === "solo" ? "modeSolo" : "modeDuo").checked = true;
+    $("endlessIn").checked = !!preset.endless;
+    $("in0").value = setupMode() === "solo" ? pr.solo : pr.names[0];
+  }
   $("setupNote").textContent = midGame ? "This replaces your unfinished table." : "Names stay on this phone.";
   $("cancelSetup").hidden = !!first;
   syncSetup();
@@ -1347,6 +1400,7 @@ function startDaily() {
   const today = dateStr();
   state = loadDaily(today) || newGame("daily", [prefs().solo || "You", ""], today);
   save();
+  showGame();
   render();
   if (state.over) showEnd();
   else closeOverlays();
@@ -1357,6 +1411,7 @@ function resumeGame() {
   if (!g) return openSetup(false);
   state = g;
   save();
+  showGame();
   render();
   if (state.over) showEnd();
   else closeOverlays();
@@ -1385,17 +1440,19 @@ $("setupForm").addEventListener("submit", e => {
   writeJSON(KEY.prefs, pr);
   state = newGame(mode, names, null, pr.endless);
   save();
+  showGame();
   render();
   closeOverlays();
 });
 $("setupDaily").addEventListener("click", startDaily);
-$("cancelSetup").addEventListener("click", () => { closeOverlays(); if (state && state.over) showEnd(); });
+$("cancelSetup").addEventListener("click", () => { closeOverlays(); if (!onHome() && state && state.over) showEnd(); });
 $("passBtn").addEventListener("click", skip);
 $("undoBtn").addEventListener("click", undo);
 function anotherRound() {
   // With two players, swap who goes first each round.
   state = newGame(state.mode, solo() ? state.names : state.names.slice().reverse(), null, state.endless);
   save();
+  showGame();
   render();
   closeOverlays();
 }
@@ -1431,6 +1488,7 @@ function menuItem(name, sub, onClick, feature) {
 function openMenu() {
   const list = $("menuList");
   list.replaceChildren();
+  list.append(menuItem("Home", "", goHome));
   const today = dateStr();
   const d = loadDaily(today);
   const dailySub = el("span", "mi-sub");
@@ -1912,8 +1970,8 @@ function openIntro(fromHelp, replay = false) {
 
 function closeIntro() {
   writeJSON(KEY.intro, true);
-  if (!introFromHelp && !introReplay && !load()) openSetup(true);
-  else closeOverlays();
+  closeOverlays();
+  if (onHome()) renderHome();
 }
 
 function introGo(delta) {
@@ -1948,6 +2006,98 @@ $("introSheet").addEventListener("touchend", e => {
   else if (dx > 0 && introStep > (introFromHelp ? 1 : 0)) introGo(-1);
 });
 
+/* ---------- Home ---------- */
+
+const IN_FRAME = window.self !== window.top;
+const onHome = () => !$("home").hidden;
+
+function showHome() {
+  closeOverlays();
+  $("game").hidden = true;
+  $("home").hidden = false;
+  $("homeInstall").append($("installBar"));
+  renderHome();
+  window.scrollTo(0, 0);
+}
+
+// Entering a game adds a history step, so the phone's back button (and the browser's) returns home.
+function showGame() {
+  const fromHome = $("game").hidden;
+  $("home").hidden = true;
+  $("game").hidden = false;
+  $("appInstall").append($("installBar"));
+  if (fromHome) window.scrollTo(0, 0);
+  if (!IN_FRAME && !(history.state && history.state.view === "game")) history.pushState({ view: "game" }, "");
+}
+function goHome() {
+  if (!IN_FRAME && history.state && history.state.view === "game") history.back();
+  else showHome();
+}
+window.addEventListener("popstate", () => { if (!onHome()) showHome(); });
+
+function homeCard(kind, title, sub, onClick, pill) {
+  const b = el("button", "hcard " + kind);
+  b.type = "button";
+  const text = el("span");
+  text.append(el("div", "ht", title), el("div", "hs", sub));
+  b.append(text, pill ? el("span", "pill", pill) : el("span", "arrow", "→"));
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+function tableSummary(g) {
+  const kind = g.endless ? (g.mode === "duo" ? "Endless for two" : "Endless") : g.mode === "duo" ? "For two" : "For one";
+  const score = g.mode === "duo"
+    ? g.names[0] + " " + fmt(g.scores[0]) + ", " + g.names[1] + " " + fmt(g.scores[1])
+    : fmt(g.scores[0]) + " points";
+  return kind + " · " + score + (g.endless ? "" : " · " + (g.deck.length - g.pos) + " letters left");
+}
+
+function renderHome() {
+  $("homeHero").replaceChildren(logoPair(), el("h1", "", "Small Plates"), el("div", "tag", "a word game for one or two"));
+
+  const cards = $("homeCards");
+  cards.replaceChildren();
+  const g = unfinishedTable();
+  if (g) cards.append(homeCard("continue", "Continue your table", tableSummary(g), resumeGame));
+  const today = dateStr();
+  const d = loadDaily(today);
+  const status = d ? (d.over ? "Served · " + fmt(d.scores[0]) : "In progress") : "New today";
+  cards.append(homeCard("daily", "Daily Table #" + dailyNumber(today), "Same letters for everyone", startDaily, status));
+
+  cards.append(el("div", "modes-h", "New table"));
+  const modes = el("div", "home-modes");
+  [
+    ["For one", "Beat your best", { mode: "solo", endless: false }],
+    ["For two", "One letter each", { mode: "duo", endless: false }],
+    ["Endless", "Letters keep coming", { endless: true }],
+  ].forEach(([title, sub, preset]) => {
+    const b = el("button", "mode-btn");
+    b.type = "button";
+    b.append(el("b", "", title), el("small", "", sub));
+    b.addEventListener("click", () => openSetup(false, preset));
+    modes.append(b);
+  });
+  cards.append(modes);
+
+  const links = $("homeLinks");
+  links.replaceChildren();
+  [
+    ["Your stats", () => openPage("stats")],
+    ["How to play", () => openIntro(true)],
+    ["Settings", () => openPage("settings")],
+    ["Move your games", () => openPage("move")],
+    ["About", () => openPage("about")],
+  ].forEach(([label, go]) => {
+    const b = el("button", "", label);
+    b.type = "button";
+    b.addEventListener("click", go);
+    links.append(b);
+  });
+
+  $("homeSignoff").replaceChildren(signoff());
+}
+
 /* ---------- Start ---------- */
 
 function migrate() {
@@ -1969,15 +2119,13 @@ function start(data) {
   if (!state) {
     const pr = prefs();
     state = newGame(pr.mode, pr.mode === "solo" ? [pr.solo, ""] : pr.names);
-    render();
-    if (readJSON(KEY.intro)) openSetup(true);
-    else openIntro(false);
-    return;
   }
   render();
-  if (state.over) showEnd();
+  showHome();
+  if (data && data.view === "game" && validGame(data.state)) showGame();
+  else if (!readJSON(KEY.intro)) openIntro(false);
 }
 
-window.claude?.hot?.snapshot?.(() => ({ state }));
+window.claude?.hot?.snapshot?.(() => ({ state, view: onHome() ? "home" : "game" }));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 </script>
