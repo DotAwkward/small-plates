@@ -18,12 +18,12 @@ const dict = new Set(words);
 
 // Today's specials: food and travel words, checked against the dictionary.
 const themed = [
-  "menu", "soup", "wine", "beer", "cafe", "dish", "fork", "meal", "tray", "rice", "lime", "salt",
+  "menu", "soup", "tofu", "kale", "cafe", "dish", "fork", "meal", "tray", "rice", "lime", "salt",
   "chef", "taco", "tour", "trip", "road", "boat", "sail", "port", "gate", "hike", "tent", "view",
   "cork", "mint", "pear", "plum", "tart", "stew", "lamb", "tuna", "feta", "tide",
   "bread", "plate", "pasta", "salad", "toast", "lemon", "olive", "steak", "spoon", "table",
   "train", "beach", "hotel", "coast", "route", "globe", "tapas", "diner", "sauce", "crust",
-  "cider", "ferry", "plaza",
+  "melon", "ferry", "plaza",
 ].filter(w => dict.has(w));
 const s4 = themed.filter(w => w.length === 4);
 const s5 = themed.filter(w => w.length === 5);

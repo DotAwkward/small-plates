@@ -326,6 +326,10 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 }
 .f1 label { color: var(--p1); } .f2 label { color: var(--p2); }
 .sheet .actions { justify-content: flex-end; }
+/* Results buttons: the main action full width on top, the rest sharing a row underneath. */
+#end .actions { flex-wrap: wrap; }
+#end .actions .btn { flex: 1 1 0; }
+#end #againBtn { order: -1; flex-basis: 100%; }
 .final { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .final .player { text-align: left; background: var(--bg); }
 .final .bestw { font-size: 0.8rem; color: var(--muted); }
@@ -602,7 +606,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
     <div class="final" id="final"></div>
     <pre class="share-card" id="shareCard" hidden></pre>
     <div class="actions">
-      <button class="btn" type="button" id="seeBoard">Look at the table</button>
+      <button class="btn" type="button" id="seeBoard">See the table</button>
       <button class="btn" type="button" id="endLeave" hidden>Back to your table</button>
       <button class="btn primary" type="button" id="againBtn">Another round</button>
     </div>
@@ -1491,6 +1495,16 @@ function renderSettings(body) {
   body.append(fs, again);
 }
 
+function privacyLink() {
+  const p = el("p", "muted");
+  const a = el("a", "", "Read the full privacy policy");
+  a.href = "https://dotawkward.github.io/privacy/";
+  a.target = "_blank";
+  a.rel = "noopener";
+  p.append(a);
+  return p;
+}
+
 function renderAbout(body) {
   const wrap = el("div", "about");
   wrap.style.display = "flex";
@@ -1511,6 +1525,7 @@ function renderAbout(body) {
     el("p", "", "A word game for one or two, made for waiting on dinner. Build words one letter at a time, then keep turning them into new ones."),
     el("h3", "", "Your privacy"),
     el("p", "", "Small Plates doesn't collect anything about you. There are no accounts, ads or trackers. Your games, names, stats and settings are saved only on this phone, and clearing your browser data or deleting the app erases them."),
+    privacyLink(),
     el("h3", "", "Thanks"),
     el("p", "muted", "Inspired by Moxie, the 2009 iPod touch word game by Daisy Wheels. Words come from the public-domain ENABLE word list. Fonts are Young Serif, Figtree, Caveat and Archivo Black, under the SIL Open Font License."),
     code,
