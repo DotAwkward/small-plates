@@ -1,5 +1,6 @@
 // Small Plates service worker: keeps the whole game on the phone so it plays offline.
-const CACHE = "small-plates-__VERSION__";
+const PREFIX = "small-plates-";
+const CACHE = PREFIX + "__VERSION__";
 const FILES = [
   "./",
   "index.html",
@@ -22,7 +23,8 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      // Other apps on dotawkward.github.io (like Sprout) share this cache storage, so only clear our own old versions.
+      .then(keys => Promise.all(keys.filter(k => k.startsWith(PREFIX) && k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -31,9 +33,9 @@ self.addEventListener("fetch", event => {
   const req = event.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
   event.respondWith(
-    caches.match(req, { ignoreSearch: true }).then(hit => {
+    caches.open(CACHE).then(cache => cache.match(req, { ignoreSearch: true })).then(hit => {
       if (hit) return hit;
-      return fetch(req).catch(() => (req.mode === "navigate" ? caches.match("index.html") : Response.error()));
+      return fetch(req).catch(() => (req.mode === "navigate" ? caches.open(CACHE).then(c => c.match("index.html")) : Response.error()));
     })
   );
 });
