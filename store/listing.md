@@ -20,6 +20,7 @@ PLAY YOUR WAY
 • Table for one: chase your best score.
 • Table for two: pass the phone across the table and take turns, one letter each.
 • The Daily Table: everyone gets the same letters each day. One try, no undo, and a result card to share with friends.
+• Endless tables: the letters keep coming and the specials keep changing until you close the check.
 
 LITTLE THINGS THAT MAKE IT FUN
 • Today's specials: spell the chef's words for big bonus points.

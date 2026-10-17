@@ -515,7 +515,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
     </div>
     <div class="deckbox" aria-label="Letters left">
       <div class="stack" id="deckCount">40</div>
-      <div class="decklabel">letters<br>left</div>
+      <div class="decklabel" id="deckLabel">letters<br>left</div>
     </div>
     <div class="player p2" id="card1">
       <div class="pname" id="name1">Seat 2</div>
@@ -562,7 +562,8 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
         <li>Don't want a letter? Skip it. It's gone for good, and that counts as your turn.</li>
         <li>Each word can be served only once per game. If a spot would make a word that's already been served, the letter can't go there.</li>
         <li>Spell one of today's specials for a big bonus.</li>
-        <li>The game ends when all 40 letters are used.</li>
+        <li>A regular game ends when all 40 letters are used.</li>
+        <li>Turn on <strong>Endless</strong> when you start a new table and the letters keep coming. Specials refresh as they are served. When you are done, choose Close the check in the menu.</li>
         <li>The <strong>Daily Table</strong> deals everyone the same letters and specials each day. You get one try, with no undo, and a fresh table at midnight.</li>
       </ul>
       <p>Scoring: add up the letter values, then ×10 for a 3-letter word, ×15 for 4, ×25 for 5, and ×35 for a 6-letter Qu word. Each extra course adds 15. Specials add 100 (4 letters) or 200 (5 letters).</p>
@@ -591,6 +592,10 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
     </fieldset>
     <div class="field f1"><label for="in0" id="in0Label">Goes first</label><input id="in0" maxlength="14" autocomplete="off"></div>
     <div class="field f2" id="field1"><label for="in1">Goes second</label><input id="in1" maxlength="14" autocomplete="off"></div>
+    <div class="setting" id="endlessRow">
+      <label class="st-text" for="endlessIn">Endless table<small>Letters keep coming until you close the check</small></label>
+      <span class="switch"><input type="checkbox" id="endlessIn" role="switch"><span></span></span>
+    </div>
     <p id="setupNote">Names stay on this phone.</p>
     <button class="linkish" type="button" id="setupDaily">Or play today's Daily Table →</button>
     <div class="actions">
@@ -738,7 +743,7 @@ function prefs() {
 }
 
 const STATS_DEFAULT = {
-  played: { solo: 0, duo: 0, daily: 0 }, bestSolo: 0, bestDaily: 0,
+  played: { solo: 0, duo: 0, daily: 0, endless: 0 }, bestSolo: 0, bestDaily: 0, bestEndless: 0,
   bestDish: null, longest: null, served: 0, sentBack: 0, specials: 0,
   streak: 0, maxStreak: 0, lastDaily: null,
 };
@@ -811,18 +816,20 @@ function feedback(kind) {
 /* ---------- Game setup ---------- */
 
 function newDeck(rnd) {
-  // DECK_SIZE (40) letters: 15 vowels, 24 consonants (common ones doubled up), and one rare letter.
-  const letters = ("EEEEAAAIIIOOOUU" + "TTTNNRRSSLL" + "DDCMPHGB" + "FWYKV").split("");
+  // DECK_SIZE (40) letters: 17 vowels, 22 consonants (the commonest doubled up), and one rare letter.
+  const letters = ("EEEEEAAAAIIIOOOUU" + "TTTNNRRSSL" + "DCMPHGB" + "FWYKV").split("");
   letters.push(pick(["J", "Q", "X", "Z"], 1, rnd)[0]);
   return shuffle(letters.map(c => c.toLowerCase()), rnd);
 }
 
-function newGame(mode, names, date = null) {
+function newGame(mode, names, date = null, endless = false) {
   const rnd = mode === "daily" ? seeded("small-plates/" + date) : Math.random;
   const deck = newDeck(rnd);
   const specials = [...pick(SPECIALS4, 2, rnd), ...pick(SPECIALS5, 1, rnd)].map(w => ({ w, by: null }));
   return {
     mode, names, date,
+    endless: mode !== "daily" && !!endless, // letters keep coming until someone closes the check
+    specialsServed: 0,
     scores: [0, 0],
     turn: 0,
     deck, pos: 0,
@@ -917,9 +924,13 @@ function place(r, c) {
     let note = "", special = false;
     let pts = letterSum(w) * LEN_MULT[w.length] + COURSE_BONUS * (course - 1);
     const sp = state.specials.find(s => s.w === w && s.by === null);
-    if (sp) { sp.by = p; pts += SPECIAL_BONUS[w.length]; note = "a special!"; special = true; }
+    if (sp) {
+      sp.by = p; pts += SPECIAL_BONUS[w.length]; note = "a special!"; special = true;
+      state.specialsServed = (state.specialsServed || 0) + 1;
+    }
     else if (course > 1) note = "course " + course;
     state.used[w] = p;
+    if (sp && state.endless) refreshSpecial(sp);
     state.scores[p] += pts;
     state.rowLog[r].push("g");
     state.log.push({ p, w, pts, kind: "word" });
@@ -949,9 +960,32 @@ function skip() {
   finishMove(true);
 }
 
+// Endless tables: the kitchen opens a fresh bag of letters before the last one runs out.
+function topUpDeck() {
+  if (state.endless && state.deck.length - state.pos < 3) state.deck.push(...newDeck(Math.random));
+}
+
+// Endless tables: a served special is swapped for a new one of the same length.
+function refreshSpecial(sp) {
+  const pool = (sp.w.length === 4 ? SPECIALS4 : SPECIALS5)
+    .filter(w => !state.specials.some(s => s.w === w) && state.used[w] === undefined);
+  if (pool.length) { sp.w = pick(pool, 1)[0]; sp.by = null; }
+}
+
+function closeCheck() {
+  if (!state.endless || state.over) return;
+  state.over = true;
+  recordGame();
+  save();
+  render();
+  setTimeout(() => feedback("end"), 150);
+  showEnd();
+}
+
 function finishMove(endTurn) {
   if (endTurn && !solo()) state.turn = 1 - state.turn;
-  if (state.pos >= state.deck.length) {
+  topUpDeck();
+  if (!state.endless && state.pos >= state.deck.length) {
     state.over = true;
     recordGame();
   }
@@ -974,15 +1008,17 @@ function recordGame() {
   if (state.recorded) return;
   state.recorded = true;
   const st = getStats();
-  st.played[state.mode] = (st.played[state.mode] || 0) + 1;
+  const kind = state.endless ? "endless" : state.mode;
+  st.played[kind] = (st.played[kind] || 0) + 1;
   const words = state.log.filter(x => x.kind === "word");
   st.served += words.length;
   st.sentBack += state.log.filter(x => x.kind === "sent").length;
-  st.specials += state.specials.filter(s => s.by !== null).length;
+  st.specials += state.specialsServed ?? state.specials.filter(s => s.by !== null).length;
   words.forEach(x => { if (!st.bestDish || x.pts > st.bestDish.pts) st.bestDish = { w: x.w, pts: x.pts }; });
   if (!st.longest || state.maxCourse.n > st.longest.n) st.longest = { ...state.maxCourse };
   const score = state.scores[0];
-  if (state.mode === "solo" && score > st.bestSolo) { st.bestSolo = score; state.newBest = true; }
+  if (state.mode === "solo" && !state.endless && score > st.bestSolo) { st.bestSolo = score; state.newBest = true; }
+  if (state.mode === "solo" && state.endless && score > st.bestEndless) { st.bestEndless = score; state.newBest = true; }
   if (state.mode === "daily") {
     if (score > st.bestDaily) { st.bestDaily = score; state.newBest = true; }
     if (st.lastDaily !== state.date) {
@@ -1010,7 +1046,7 @@ function render() {
   const s = state, p = s.turn, one = solo();
   const st = getStats();
   document.documentElement.style.setProperty("--pc", pColor(p));
-  $("tableSize").textContent = daily() ? "daily #" + dailyNumber(s.date) : one ? "for one" : "for two";
+  $("tableSize").textContent = daily() ? "daily #" + dailyNumber(s.date) : s.endless ? "endless" : one ? "for one" : "for two";
 
   // The bill
   $("name0").textContent = s.names[0];
@@ -1021,8 +1057,8 @@ function render() {
   c1.classList.toggle("best", one);
   c1.classList.toggle("active", !one && !s.over && p === 1);
   if (one) {
-    const best = daily() ? st.bestDaily : st.bestSolo;
-    $("name1").textContent = daily() ? "Daily best" : "Your best";
+    const best = daily() ? st.bestDaily : s.endless ? st.bestEndless : st.bestSolo;
+    $("name1").textContent = daily() ? "Daily best" : s.endless ? "Endless best" : "Your best";
     $("score1").textContent = best ? fmt(best) : "–";
     $("turn1").textContent = daily() ? currentStreak(st) + " day streak" : "on this phone";
   } else {
@@ -1030,7 +1066,8 @@ function render() {
     $("score1").textContent = fmt(s.scores[1]);
     $("turn1").textContent = "You're up";
   }
-  $("deckCount").textContent = s.deck.length - s.pos;
+  $("deckCount").textContent = s.endless ? "∞" : s.deck.length - s.pos;
+  $("deckLabel").replaceChildren(...(s.endless ? ["keeps", el("br"), "coming"] : ["letters", el("br"), "left"]));
 
   // Specials board
   const sp = $("specials");
@@ -1127,7 +1164,7 @@ function render() {
   if (s.over) {
     $("ticketWho").textContent = "Kitchen's closed";
     $("current").replaceChildren(el("span", "", "–"));
-    $("next").replaceChildren("All " + s.deck.length + " letters used");
+    $("next").replaceChildren(s.endless ? "You closed the check" : "All " + s.deck.length + " letters used");
   } else {
     $("ticketWho").textContent = one ? "Your letter" : s.names[p] + ", you're up";
     $("current").replaceChildren(face(cur), el("span", "v", worth(cur)));
@@ -1259,8 +1296,11 @@ function showEnd() {
     $("shareCard").hidden = false;
     $("againBtn").textContent = "Share";
   } else if (solo()) {
-    $("endTitle").textContent = s.newBest ? "New best score!" : "Check, please!";
-    $("endNote").textContent = s.newBest ? "That's your best yet on this phone." : "Your best on this phone is " + fmt(st.bestSolo) + ".";
+    const bestHere = s.endless ? st.bestEndless : st.bestSolo;
+    const served = s.log.filter(x => x.kind === "word").length;
+    $("endTitle").textContent = s.newBest ? (s.endless ? "New endless best!" : "New best score!") : "Check, please!";
+    $("endNote").textContent = (s.endless ? "You served " + served + " dishes from " + s.pos + " letters. " : "") +
+      (s.newBest ? "That's your best yet on this phone." : "Your best on this phone is " + fmt(bestHere) + ".");
     const card = el("div", "player");
     card.append(el("div", "pname", "Tonight"), el("div", "pscore", fmt(s.scores[0])), bestDish(0));
     const best = el("div", "player best");
@@ -1296,6 +1336,7 @@ function openSetup(first) {
   $("in1").value = pr.names[1];
   const g = loadGame();
   const midGame = g && !g.over && g.pos > 0;
+  $("endlessIn").checked = state && state.mode !== "daily" ? !!state.endless : !!pr.endless;
   $("setupNote").textContent = midGame ? "This replaces your unfinished table." : "Names stay on this phone.";
   $("cancelSetup").hidden = !!first;
   syncSetup();
@@ -1340,8 +1381,9 @@ $("setupForm").addEventListener("submit", e => {
     pr.names = names;
   }
   pr.mode = mode;
+  pr.endless = $("endlessIn").checked;
   writeJSON(KEY.prefs, pr);
-  state = newGame(mode, names);
+  state = newGame(mode, names, null, pr.endless);
   save();
   render();
   closeOverlays();
@@ -1352,7 +1394,7 @@ $("passBtn").addEventListener("click", skip);
 $("undoBtn").addEventListener("click", undo);
 function anotherRound() {
   // With two players, swap who goes first each round.
-  state = newGame(state.mode, solo() ? state.names : state.names.slice().reverse());
+  state = newGame(state.mode, solo() ? state.names : state.names.slice().reverse(), null, state.endless);
   save();
   render();
   closeOverlays();
@@ -1399,6 +1441,7 @@ function openMenu() {
     list.append(menuItem("Back to your table", (g.mode === "duo" ? "For two" : "For one") + " · " + (g.deck.length - g.pos) + " letters left", resumeGame));
   }
   list.append(
+    ...(state && state.endless && !state.over ? [menuItem("Close the check", "End this endless table", () => { closeOverlays(); closeCheck(); })] : []),
     menuItem("New table", "For one or two", () => openSetup(false)),
     menuItem("Your stats", "On this phone", () => openPage("stats")),
     menuItem("How to play", "", () => openIntro(true)),
@@ -1423,15 +1466,16 @@ function tile(k, val, sub, opts = {}) {
 let resetArmed = false;
 function renderStats(body) {
   const st = getStats();
-  const total = st.played.solo + st.played.duo + st.played.daily;
+  const total = st.played.solo + st.played.duo + st.played.daily + (st.played.endless || 0);
   const grid = el("div", "stats-grid");
   grid.append(
-    tile("Games played", fmt(total), st.played.solo + " solo · " + st.played.duo + " for two · " + st.played.daily + " daily", { wide: true }),
+    tile("Games played", fmt(total), st.played.solo + " solo · " + st.played.duo + " for two · " + st.played.daily + " daily · " + (st.played.endless || 0) + " endless", { wide: true }),
     tile("Best solo", st.bestSolo ? fmt(st.bestSolo) : "–"),
+    tile("Best endless", st.bestEndless ? fmt(st.bestEndless) : "–", "Playing solo"),
     tile("Best daily", st.bestDaily ? fmt(st.bestDaily) : "–"),
     tile("Daily streak", String(currentStreak(st)), "Best " + st.maxStreak),
     tile("Specials", fmt(st.specials), "served"),
-    tile("Best dish", st.bestDish ? upper(st.bestDish.w) : "–", st.bestDish ? st.bestDish.pts + " points" : "Serve a word to start", { word: !!st.bestDish }),
+    tile("Best dish", st.bestDish ? upper(st.bestDish.w) : "–", st.bestDish ? st.bestDish.pts + " points" : "Serve a word to start", { word: !!st.bestDish, wide: true }),
     tile("Longest chain", st.longest && st.longest.n ? st.longest.n + " courses" : "–", st.longest && st.longest.n ? "ending in " + upper(st.longest.w) : ""),
     tile("Words served", fmt(st.served)),
     tile("Sent back", fmt(st.sentBack)),
