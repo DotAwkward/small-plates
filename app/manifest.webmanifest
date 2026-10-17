@@ -1,0 +1,16 @@
+{
+  "name": "Small Plates",
+  "short_name": "Small Plates",
+  "description": "A word game for one or two: plate letters, serve words, and turn each one into the next course.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef1f5",
+  "theme_color": "#2c5aa0",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
