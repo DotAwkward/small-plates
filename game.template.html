@@ -345,13 +345,17 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 .intro-body.welcome { align-items: center; text-align: center; padding-top: 6px; }
 .intro-body.welcome h2 { font-size: 2.1rem; }
 .intro-body.welcome .tag { font-family: var(--font-chalk); font-weight: 700; font-size: 1.45rem; color: var(--rim); line-height: 1.1; }
-.logo {
-  width: 108px; height: 108px; border-radius: 50%;
+/* The S P plate pair, matching the app icon */
+.logo { position: relative; width: 124px; height: 100px; flex-shrink: 0; }
+.logo span {
+  position: absolute; width: 66px; height: 66px; border-radius: 50%;
   background: radial-gradient(circle at 50% 42%, var(--glaze) 60%, var(--glaze-shade) 100%);
-  box-shadow: inset 0 0 0 7px var(--glaze), inset 0 0 0 11px var(--p1), 0 4px 10px rgba(0, 0, 0, .2);
-  color: var(--plate-ink); font-family: var(--font-tile); font-size: 3.2rem; line-height: 1;
+  box-shadow: inset 0 0 0 5px var(--glaze), inset 0 0 0 8px var(--rim-c), 0 4px 8px rgba(0, 0, 0, .22);
+  color: var(--plate-ink); font-family: var(--font-tile); font-size: 2rem; line-height: 1;
   display: grid; place-items: center;
 }
+.logo span:first-child { left: 4px; top: 4px; --rim-c: var(--p1); }
+.logo span:last-child { left: 54px; top: 30px; --rim-c: var(--p2); }
 .logo-wrap { padding: 22px; border-radius: 22px; display: grid; place-items: center; }
 .cloth {
   background-color: var(--cloth);
@@ -434,7 +438,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 .sheet .about p { color: var(--ink); }
 .sheet .about p.muted { color: var(--muted); font-size: 0.85rem; }
 .about a { color: var(--rim); }
-.about .logo { width: 72px; height: 72px; font-size: 2.1rem; }
+.about .logo { zoom: 0.62; }
 .about-head { display: flex; align-items: center; gap: 14px; }
 .linkish { background: none; border: 0; padding: 0; color: var(--rim); font-weight: 700; cursor: pointer; text-align: left; font-size: 0.92rem; }
 .share-card { background: var(--bg); border-radius: 12px; padding: 12px 14px; white-space: pre-wrap; font: 0.95rem/1.35 var(--font-body); margin: 0; overflow-wrap: anywhere; }
@@ -1475,7 +1479,7 @@ function renderAbout(body) {
   const head = el("div", "about-head");
   const words = el("div");
   words.append(el("h3", "", "Small Plates"), el("p", "muted", "Version " + APP_VERSION));
-  head.append(el("div", "logo", "S"), words);
+  head.append(logoPair(), words);
   const link = el("a", "", "github.com/DotAwkward/small-plates");
   link.href = "https://github.com/DotAwkward/small-plates";
   link.target = "_blank";
@@ -1573,6 +1577,13 @@ function openPage(which) {
 
 /* ---------- Intro and How to play ---------- */
 
+function logoPair() {
+  const d = el("div", "logo");
+  d.setAttribute("aria-hidden", "true");
+  d.append(el("span", "", "S"), el("span", "", "P"));
+  return d;
+}
+
 function demoPlate(ch, color) {
   const s = el("span", "plate", upper(ch));
   s.style.setProperty("--by", color || "var(--p1)");
@@ -1665,7 +1676,7 @@ function renderIntro() {
   if (introStep === 0) {
     body.classList.add("welcome");
     const wrap = el("div", "logo-wrap cloth");
-    wrap.append(el("div", "logo", "S"));
+    wrap.append(logoPair());
     const h = el("h2", "", "Small Plates");
     h.id = "introTitle";
     body.append(wrap, h, el("div", "tag", "a word game for one or two"),

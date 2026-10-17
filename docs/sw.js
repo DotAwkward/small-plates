@@ -1,12 +1,13 @@
 // Small Plates service worker: keeps the whole game on the phone so it plays offline.
 const PREFIX = "small-plates-";
-const CACHE = PREFIX + "bd336daa71";
+const CACHE = PREFIX + "4d52576269";
 const FILES = [
   "./",
   "index.html",
   "manifest.webmanifest",
   "icons/icon-192.png",
   "icons/icon-512.png",
+  "icons/maskable-512.png",
   "icons/apple-touch-icon.png",
   "icons/favicon.png",
   "fonts/archivo-black.woff2",
