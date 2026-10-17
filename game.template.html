@@ -516,6 +516,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
         <div class="next" id="next">Next <span class="mini">E</span></div>
         <button class="btn" id="passBtn" type="button">Skip</button>
         <button class="btn" id="undoBtn" type="button">Undo</button>
+        <button class="btn primary" id="leaveBtn" type="button" hidden>New table</button>
       </div>
     </div>
   </section>
@@ -585,6 +586,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
     <pre class="share-card" id="shareCard" hidden></pre>
     <div class="actions">
       <button class="btn" type="button" id="seeBoard">Look at the table</button>
+      <button class="btn" type="button" id="endLeave" hidden>Back to your table</button>
       <button class="btn primary" type="button" id="againBtn">Another round</button>
     </div>
   </div>
@@ -1108,7 +1110,10 @@ function render() {
     if (nx) $("next").append(el("span", "mini" + (nx === "q" ? " qu" : ""), face(nx)));
   }
   $("passBtn").disabled = s.over;
-  $("undoBtn").hidden = daily();
+  $("passBtn").hidden = s.over;
+  $("leaveBtn").hidden = !s.over;
+  $("leaveBtn").textContent = leaveLabel();
+  $("undoBtn").hidden = daily() || s.over;
   $("undoBtn").disabled = s.over || !s.history.length;
 
   // Dishes served
@@ -1153,7 +1158,7 @@ function closeOverlays() {
 }
 document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", closeOverlays));
 OVERLAYS.forEach(id => $(id).addEventListener("click", e => {
-  if (e.target === $(id) && (id === "menu" || id === "page")) closeOverlays();
+  if (e.target === $(id) && (id === "menu" || id === "page" || id === "end")) closeOverlays();
 }));
 
 function bestDish(i) {
@@ -1205,6 +1210,8 @@ function showEnd() {
   fin.replaceChildren();
   $("shareCard").hidden = true;
   $("againBtn").textContent = "Another round";
+  $("endLeave").hidden = !daily();
+  $("endLeave").textContent = leaveLabel();
   stopCountdown();
   if (daily()) {
     const num = dailyNumber(s.date);
@@ -1313,14 +1320,29 @@ $("setupDaily").addEventListener("click", startDaily);
 $("cancelSetup").addEventListener("click", () => { closeOverlays(); if (state && state.over) showEnd(); });
 $("passBtn").addEventListener("click", skip);
 $("undoBtn").addEventListener("click", undo);
-$("againBtn").addEventListener("click", () => {
-  if (daily()) return shareResult();
+function anotherRound() {
   // With two players, swap who goes first each round.
   state = newGame(state.mode, solo() ? state.names : state.names.slice().reverse());
   save();
   render();
   closeOverlays();
-});
+}
+
+// Where to go once a game is finished: a new round, or out of the Daily Table.
+const unfinishedTable = () => { const g = loadGame(); return g && !g.over && g.pos > 0 ? g : null; };
+function leaveLabel() {
+  if (!state || !daily()) return "Another round";
+  return unfinishedTable() ? "Back to your table" : "New table";
+}
+function leaveFinished() {
+  if (!daily()) return anotherRound();
+  if (unfinishedTable()) resumeGame();
+  else openSetup(false);
+}
+
+$("againBtn").addEventListener("click", () => (daily() ? shareResult() : anotherRound()));
+$("leaveBtn").addEventListener("click", leaveFinished);
+$("endLeave").addEventListener("click", leaveFinished);
 $("seeBoard").addEventListener("click", closeOverlays);
 
 /* ---------- Menu ---------- */
@@ -1694,7 +1716,7 @@ document.addEventListener("keydown", e => {
     if (e.key === "ArrowRight") introGo(1);
     else if (e.key === "ArrowLeft" && introStep > (introFromHelp ? 1 : 0)) introGo(-1);
     else if (e.key === "Escape") closeIntro();
-  } else if (e.key === "Escape" && (!$("menu").hidden || !$("page").hidden)) {
+  } else if (e.key === "Escape" && (!$("menu").hidden || !$("page").hidden || !$("end").hidden)) {
     closeOverlays();
   }
 });
