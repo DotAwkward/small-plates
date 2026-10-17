@@ -235,6 +235,10 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
   align-items: center;
   transition: border-color .25s;
 }
+/* The two-letter Qu plate needs a smaller face to fit */
+.plate.qu { font-size: clamp(0.8rem, 4.2vw, 1.1rem); letter-spacing: -0.03em; }
+.current.qu { font-size: 1.65rem; letter-spacing: -0.03em; }
+.mini.qu { font-size: 0.6rem; letter-spacing: -0.03em; }
 .ticket-who { font-family: var(--font-display); font-size: 1.1rem; line-height: 1.2; color: var(--pc); }
 .ticket-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ticket-row .next { margin-right: auto; }
@@ -525,14 +529,15 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
         <li>Put the letter at either end of a plate, or drop it on a letter already there to swap it.</li>
         <li>When a plate spells a word of 3 or more letters, it's served and you score. Playing with two, it's then the other person's turn.</li>
         <li>Keep turning a plate into new words, each one another course: <span class="ex">TIN → TINE → TILE → TILED</span>. Every course adds a bonus.</li>
-        <li>One or two letters isn't a dish yet, so keep going.</li>
+        <li>A plate with only one or two letters on it isn't a dish yet, so keep going.</li>
+        <li>The Q always comes with its U. The <span class="ex">QU</span> plate takes one spot but spells two letters, so <span class="ex">QU·I·T</span> is QUIT.</li>
         <li>Serve something that isn't a word and it gets <strong>sent back</strong>: you lose 25 and the plate is cleared.</li>
         <li>Don't want a letter? Skip it. It's gone for good, and with two players your turn ends.</li>
         <li>Each word scores once per game. Spell one of today's specials for a big bonus.</li>
         <li>The game ends when all 52 letters are used.</li>
         <li>The <strong>Daily Table</strong> deals everyone the same letters and specials each day. You get one try, with no undo, and a fresh table at midnight.</li>
       </ul>
-      <p>Scoring: add up the letter values, then ×10 for a 3-letter word, ×15 for 4, ×25 for 5. Each extra course adds 15. Specials add 100 (4 letters) or 200 (5 letters).</p>
+      <p>Scoring: add up the letter values, then ×10 for a 3-letter word, ×15 for 4, ×25 for 5, and ×35 for a 6-letter Qu word. Each extra course adds 15. Specials add 100 (4 letters) or 200 (5 letters).</p>
     </div>
   </details>
 </div>
@@ -602,7 +607,7 @@ const APP_VERSION = "__APPVERSION__";
 
 const DICT = new Set(WORDLIST.split(" "));
 const VALUES = { a:1,b:3,c:3,d:2,e:1,f:4,g:2,h:4,i:1,j:8,k:5,l:1,m:3,n:1,o:1,p:3,q:10,r:1,s:1,t:1,u:1,v:4,w:4,x:8,y:4,z:10 };
-const LEN_MULT = { 3: 10, 4: 15, 5: 25 };
+const LEN_MULT = { 3: 10, 4: 15, 5: 25, 6: 35 }; // 6 letters only happens with the Qu plate
 const COURSE_BONUS = 15;
 const SPECIAL_BONUS = { 4: 100, 5: 200 };
 const SENT_BACK = 25;
@@ -811,7 +816,17 @@ function snapshot() {
 const solo = () => state.mode !== "duo";
 const daily = () => state.mode === "daily";
 const current = () => state.deck[state.pos];
-const rowWord = row => row.cells.filter(Boolean).map(x => x.ch).join("");
+// The Q always comes with its U: one plate that spells "qu".
+const spell = ch => (ch === "q" ? "qu" : ch);
+const face = ch => (ch === "q" ? "Qu" : (ch || "").toUpperCase());
+const worth = ch => (ch === "q" ? VALUES.q + VALUES.u : VALUES[ch]);
+const plateFor = (cls, ch) => {
+  const s = el("span", cls + (ch === "q" ? " qu" : ""), face(ch));
+  s.append(el("span", "v", worth(ch)));
+  return s;
+};
+const rowWord = row => row.cells.filter(Boolean).map(x => spell(x.ch)).join("");
+const rowTiles = row => row.cells.filter(Boolean).length;
 const letterSum = w => [...w].reduce((s, c) => s + VALUES[c], 0);
 
 function targetsFor(row) {
@@ -838,8 +853,9 @@ function place(r, c) {
   state.pos++;
   const w = rowWord(row);
 
-  if (w.length < 3) {
-    state.msg = { kind: "info", p, text: w.length === 1 ? "started a new plate with" : "is still cooking", word: w };
+  const tiles = rowTiles(row);
+  if (tiles < 3) {
+    state.msg = { kind: "info", p, text: tiles === 1 ? "started a new plate with" : "is still cooking", word: w };
     flash = { r, c, kind: "pop" };
     feedback("place");
     return finishMove(false);
@@ -882,7 +898,7 @@ function place(r, c) {
 function skip() {
   if (state.over) return;
   snapshot();
-  state.msg = { kind: "info", p: state.turn, text: "skipped", word: current() };
+  state.msg = { kind: "info", p: state.turn, text: "skipped", word: spell(current()) };
   state.pos++;
   feedback("skip");
   finishMove(true);
@@ -991,7 +1007,7 @@ function render() {
   board.replaceChildren();
   s.rows.forEach((row, r) => {
     const w = rowWord(row);
-    const rowEl = el("div", "row" + (w.length >= 3 ? " word" : ""));
+    const rowEl = el("div", "row" + (rowTiles(row) >= 3 ? " word" : ""));
     rowEl.setAttribute("role", "group");
     rowEl.setAttribute("aria-label", "Plate " + (r + 1) + (w ? ": " + upper(w) : ", empty"));
     const targets = s.over ? new Set() : targetsFor(row);
@@ -1000,17 +1016,16 @@ function render() {
       b.type = "button";
       if (cell) {
         b.classList.add("filled");
-        const t = el("span", "plate", upper(cell.ch));
+        const t = plateFor("plate", cell.ch);
         t.style.setProperty("--by", pColor(cell.by));
-        t.append(el("span", "v", VALUES[cell.ch]));
         if (flash && flash.r === r && flash.c === c && flash.kind === "pop") t.classList.add("pop");
         b.append(t);
         b.disabled = !targets.has(c);
-        b.setAttribute("aria-label", "Swap " + upper(cell.ch) + " for " + upper(current()));
+        b.setAttribute("aria-label", "Swap " + face(cell.ch) + " for " + face(current()));
       } else if (targets.has(c)) {
         b.classList.add("target");
         if (!w) b.classList.add("open");
-        b.setAttribute("aria-label", "Put " + upper(current()) + " on plate " + (r + 1) + ", spot " + (c + 1));
+        b.setAttribute("aria-label", "Put " + face(current()) + " on plate " + (r + 1) + ", spot " + (c + 1));
       } else {
         b.disabled = true;
         b.setAttribute("aria-hidden", "true");
@@ -1043,7 +1058,8 @@ function render() {
       line.append(who, " served ", el("b", "", upper(m.word)));
       if (m.note) line.append(" · " + m.note);
     } else {
-      line.append(who, " " + m.text + (m.word ? " " : ""));
+      const text = s.names[m.p] === "You" ? m.text.replace(/^is /, "are ") : m.text;
+      line.append(who, " " + text + (m.word ? " " : ""));
       if (m.word) line.append(el("b", "", upper(m.word)));
     }
     msg.append(line);
@@ -1058,16 +1074,17 @@ function render() {
   const ticket = $("ticket");
   ticket.style.setProperty("--pc", pColor(p));
   const cur = current();
+  $("current").classList.toggle("qu", !s.over && cur === "q");
   if (s.over) {
     $("ticketWho").textContent = "Kitchen's closed";
     $("current").replaceChildren(el("span", "", "–"));
     $("next").replaceChildren("All 52 letters used");
   } else {
     $("ticketWho").textContent = one ? "Your letter" : s.names[p] + ", you're up";
-    $("current").replaceChildren(upper(cur), el("span", "v", VALUES[cur]));
+    $("current").replaceChildren(face(cur), el("span", "v", worth(cur)));
     const nx = s.deck[s.pos + 1];
     $("next").replaceChildren(nx ? "Next " : "Last letter");
-    if (nx) $("next").append(el("span", "mini", upper(nx)));
+    if (nx) $("next").append(el("span", "mini" + (nx === "q" ? " qu" : ""), face(nx)));
   }
   $("passBtn").disabled = s.over;
   $("undoBtn").hidden = daily();

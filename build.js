@@ -7,8 +7,13 @@ const path = require("path");
 const crypto = require("crypto");
 
 const dir = __dirname;
-const words = fs.readFileSync(path.join(dir, "words-3to5.txt"), "utf8")
-  .split(/\r?\n/).map(w => w.trim()).filter(w => /^[a-z]{3,5}$/.test(w));
+const readWords = (file, re) => fs.readFileSync(path.join(dir, file), "utf8")
+  .split(/\r?\n/).map(w => w.trim()).filter(w => re.test(w));
+// 3-5 letter words, plus 6-letter words with QU (the Qu plate spells two letters in one spot).
+const words = [
+  ...readWords("words-3to5.txt", /^[a-z]{3,5}$/),
+  ...readWords("words-qu6.txt", /^[a-z]{6}$/),
+];
 const dict = new Set(words);
 
 // Today's specials: food and travel words, checked against the dictionary.
