@@ -30,7 +30,11 @@ const s5 = themed.filter(w => w.length === 5);
 
 const template = fs.readFileSync(path.join(dir, "game.template.html"), "utf8");
 const appVersion = "1.1 · " + crypto.createHash("sha1").update(template).digest("hex").slice(0, 7);
+// Shared Dot Awkward pieces, copied from the studio kit (C:\Claude\Dot Awkward\kit) into app/kit.
+const kit = name => fs.readFileSync(path.join(dir, "app", "kit", name), "utf8");
 const page = template
+  .replace("<!--da-sting-->", () => kit("sting.html"))
+  .replace("<!--da-signoff-->", () => kit("signoff.html"))
   .replace("__APPVERSION__", () => appVersion)
   .replace("__WORDS__", () => words.join(" "))
   .replace("__SPECIALS4__", () => JSON.stringify(s4))

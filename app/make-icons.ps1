@@ -1,8 +1,8 @@
 # Draws the Small Plates app icons: two plates, S and P, on cobalt.
 #   powershell -ExecutionPolicy Bypass -File app\make-icons.ps1
-#   powershell -ExecutionPolicy Bypass -File app\make-icons.ps1 -Dot "#ff5d3a"   (adds the studio dot)
+#   powershell -ExecutionPolicy Bypass -File app\make-icons.ps1 -Dot "#ff5d3a"   (the studio dot is on by default; -NoDot leaves it off)
 # Shapes are laid out on a 120-unit grid, the same as the design mockups, and scaled to each size.
-param([string]$Dot = "")
+param([string]$Dot = "#ff5d3a", [switch]$NoDot)
 
 Add-Type -AssemblyName System.Drawing
 $out = Join-Path $PSScriptRoot "icons"
@@ -65,7 +65,7 @@ function Draw-Icon([int]$size, [string]$name, [bool]$rounded, [double]$zoom) {
     $g.DrawString($plate.letter, $font, (Brush "#1d2433"), $box, $fmt)
   }
 
-  if ($Dot) { Disc $g (Brush $Dot) 97 99 7 }
+  if ($Dot -and -not $NoDot) { Disc $g (Brush $Dot) 97 99 7 }
 
   $bmp.Save((Join-Path $out $name), [System.Drawing.Imaging.ImageFormat]::Png)
   $g.Dispose(); $bmp.Dispose()
