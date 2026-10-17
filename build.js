@@ -9,11 +9,15 @@ const crypto = require("crypto");
 const dir = __dirname;
 const readWords = (file, re) => fs.readFileSync(path.join(dir, file), "utf8")
   .split(/\r?\n/).map(w => w.trim()).filter(w => re.test(w));
-// 3-5 letter words, plus 6-letter words with QU (the Qu plate spells two letters in one spot).
-const words = [
+// 3-5 letter words, plus 6-letter words with QU (the Qu plate spells two letters in one spot),
+// plus a few extras the dictionary lacks, minus swear words and slurs.
+const blocked = new Set(readWords("words-blocked.txt", /^[a-z]+$/));
+const extras = readWords("words-extra.txt", /^[a-z]{3,6}$/);
+const words = [...new Set([
   ...readWords("words-3to5.txt", /^[a-z]{3,5}$/),
   ...readWords("words-qu6.txt", /^[a-z]{6}$/),
-];
+  ...extras,
+])].filter(w => !blocked.has(w));
 const dict = new Set(words);
 
 // Today's specials: food and travel words, checked against the dictionary.
@@ -104,4 +108,4 @@ for (const f of [html, fs.readFileSync(path.join(app, "manifest.webmanifest")), 
 const version = hash.digest("hex").slice(0, 10);
 fs.writeFileSync(path.join(docs, "sw.js"), fs.readFileSync(path.join(app, "sw.js"), "utf8").replace("__VERSION__", version));
 
-console.log(`small-plates.html + docs/ built: ${words.length} words, ${s4.length}+${s5.length} specials, ${(page.length / 1024).toFixed(0)} KB page, cache ${version}`);
+console.log(`small-plates.html + docs/ built: ${words.length} words (${blocked.size} blocked, ${extras.length} extra), ${s4.length}+${s5.length} specials, ${(page.length / 1024).toFixed(0)} KB page, cache ${version}`);

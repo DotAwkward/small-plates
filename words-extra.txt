@@ -1,0 +1,4 @@
+# Extra words Small Plates accepts that the dictionary doesn't have.
+# One word per line, lowercase, 3 to 5 letters (or 6 with QU).
+poo
+poos
