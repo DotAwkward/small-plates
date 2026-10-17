@@ -161,6 +161,8 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
   padding: 3px; border-radius: 999px;
 }
 .row.word { background: color-mix(in srgb, var(--saffron) 22%, transparent); }
+.row.bad { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--bad) 16%, transparent) 0 8px, color-mix(in srgb, var(--bad) 8%, transparent) 8px 16px); }
+.row.bad .plate { opacity: 0.8; }
 .cell {
   aspect-ratio: 1; max-width: 100%;
   border-radius: 50%;
@@ -200,6 +202,8 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
   font-variant-numeric: tabular-nums;
 }
 .course.on { color: var(--surface); background: var(--ink); border: 1.5px solid var(--ink); }
+.course.bad { color: var(--surface); background: var(--bad); border: 1.5px solid var(--bad); font-family: var(--font-body); font-weight: 700; }
+.msg.blocked .pts { color: var(--muted); }
 .pop { animation: pop .28s ease-out; }
 @keyframes pop { 0% { transform: scale(.6); } 70% { transform: scale(1.08); } 100% { transform: scale(1); } }
 .shake { animation: shake .4s ease-in-out; }
@@ -531,9 +535,10 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
         <li>Keep turning a plate into new words, each one another course: <span class="ex">TIN → TINE → TILE → TILED</span>. Every course adds a bonus.</li>
         <li>A plate with only one or two letters on it isn't a dish yet, so keep going.</li>
         <li>The Q always comes with its U. The <span class="ex">QU</span> plate takes one spot but spells two letters, so <span class="ex">QU·I·T</span> is QUIT.</li>
-        <li>Serve something that isn't a word and it gets <strong>sent back</strong>: you lose 25 and the plate is cleared.</li>
+        <li>Serve something that isn't a word and it gets <strong>sent back</strong>: you lose 25 and the plate's courses start over. The letters stay, so you or the other player can fix it on a later turn.</li>
         <li>Don't want a letter? Skip it. It's gone for good, and with two players your turn ends.</li>
-        <li>Each word scores once per game. Spell one of today's specials for a big bonus.</li>
+        <li>Each word can be served only once per game. If a spot would make a word that's already been served, the letter can't go there.</li>
+        <li>Spell one of today's specials for a big bonus.</li>
         <li>The game ends when all 52 letters are used.</li>
         <li>The <strong>Daily Table</strong> deals everyone the same letters and specials each day. You get one try, with no undo, and a fresh table at midnight.</li>
       </ul>
@@ -766,9 +771,10 @@ const SOUNDS = {
   special: () => [1046, 1318, 1568, 2093].forEach((f, i) => tone(f, i * 0.07, 0.4, { gain: 0.07 })),
   sent: () => tone(190, 0, 0.24, { type: "square", gain: 0.04, slide: 85 }),
   skip: () => tone(330, 0, 0.12, { type: "triangle", gain: 0.06, slide: 210 }),
+  nope: () => { tone(300, 0, 0.07, { type: "triangle", gain: 0.06 }); tone(240, 0.09, 0.09, { type: "triangle", gain: 0.06 }); },
   end: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, i * 0.11, 0.5, { gain: 0.06 })),
 };
-const BUZZ = { place: 8, serve: [12, 40, 12], special: [15, 40, 15, 40, 30], sent: [60, 40, 60], skip: 6, end: [20, 60, 20, 60, 40] };
+const BUZZ = { place: 8, serve: [12, 40, 12], special: [15, 40, 15, 40, 30], sent: [60, 40, 60], skip: 6, nope: [10, 30, 10], end: [20, 60, 20, 60, 40] };
 function feedback(kind) {
   const s = getSettings();
   if (s.sound) { try { SOUNDS[kind](); } catch (e) {} }
@@ -846,9 +852,23 @@ function place(r, c) {
   if (state.over) return;
   const row = state.rows[r];
   if (!targetsFor(row).has(c)) return;
-  snapshot();
   const p = state.turn;
   const ch = current();
+
+  // A word can only be served once per game, so that spot is off limits for this letter.
+  const before = row.cells[c];
+  row.cells[c] = { ch, by: p };
+  const tried = rowWord(row), triedTiles = rowTiles(row);
+  row.cells[c] = before;
+  if (triedTiles >= 3 && DICT.has(tried) && state.used[tried] !== undefined) {
+    state.msg = { kind: "blocked", p, word: tried };
+    flash = { r, c: -1, kind: "shake" };
+    feedback("nope");
+    render();
+    return;
+  }
+
+  snapshot();
   row.cells[c] = { ch, by: p };
   state.pos++;
   const w = rowWord(row);
@@ -862,19 +882,16 @@ function place(r, c) {
   }
 
   if (DICT.has(w)) {
-    const course = row.word ? row.course + 1 : 1;
-    row.word = w; row.course = course;
+    // A plate that was sent back starts its courses over.
+    const course = row.word && !row.bad ? row.course + 1 : 1;
+    row.word = w; row.course = course; row.bad = false;
     if (course > state.maxCourse.n) state.maxCourse = { n: course, w };
-    let pts = 0, note = "", special = false;
-    if (state.used[w] !== undefined) {
-      note = "already served, no points";
-    } else {
-      pts = letterSum(w) * LEN_MULT[w.length] + COURSE_BONUS * (course - 1);
-      const sp = state.specials.find(s => s.w === w && s.by === null);
-      if (sp) { sp.by = p; pts += SPECIAL_BONUS[w.length]; note = "a special!"; special = true; }
-      else if (course > 1) note = "course " + course;
-      state.used[w] = p;
-    }
+    let note = "", special = false;
+    let pts = letterSum(w) * LEN_MULT[w.length] + COURSE_BONUS * (course - 1);
+    const sp = state.specials.find(s => s.w === w && s.by === null);
+    if (sp) { sp.by = p; pts += SPECIAL_BONUS[w.length]; note = "a special!"; special = true; }
+    else if (course > 1) note = "course " + course;
+    state.used[w] = p;
     state.scores[p] += pts;
     state.rowLog[r].push("g");
     state.log.push({ p, w, pts, kind: "word" });
@@ -884,12 +901,12 @@ function place(r, c) {
     return finishMove(true);
   }
 
-  // Not a word: sent back to the kitchen.
+  // Not a word: sent back to the kitchen. The letters stay on the plate so it can be fixed on a later turn.
   state.scores[p] -= SENT_BACK;
   state.rowLog[r].push("s");
   state.log.push({ p, w, pts: -SENT_BACK, kind: "sent" });
   state.msg = { kind: "sent", p, word: w, pts: -SENT_BACK };
-  state.rows[r] = { cells: Array(COLS).fill(null), word: null, course: 0 };
+  row.word = null; row.course = 0; row.bad = true;
   flash = { r, c: -1, kind: "shake" };
   feedback("sent");
   finishMove(true);
@@ -1007,7 +1024,7 @@ function render() {
   board.replaceChildren();
   s.rows.forEach((row, r) => {
     const w = rowWord(row);
-    const rowEl = el("div", "row" + (rowTiles(row) >= 3 ? " word" : ""));
+    const rowEl = el("div", "row" + (row.bad ? " bad" : row.word ? " word" : ""));
     rowEl.setAttribute("role", "group");
     rowEl.setAttribute("aria-label", "Plate " + (r + 1) + (w ? ": " + upper(w) : ", empty"));
     const targets = s.over ? new Set() : targetsFor(row);
@@ -1034,8 +1051,10 @@ function render() {
       b.addEventListener("click", () => place(r, c));
       rowEl.append(b);
     });
-    const course = el("span", "course" + (row.course ? " on" : ""), row.course ? String(row.course) : "");
-    course.title = row.course ? "Course " + row.course : "Nothing served yet";
+    const course = row.bad
+      ? el("span", "course bad", "✕")
+      : el("span", "course" + (row.course ? " on" : ""), row.course ? String(row.course) : "");
+    course.title = row.bad ? "Sent back: fix it on a later turn" : row.course ? "Course " + row.course : "Nothing served yet";
     rowEl.append(course);
     if (flash && flash.r === r && flash.kind === "shake") rowEl.classList.add("shake");
     board.append(rowEl);
@@ -1053,7 +1072,9 @@ function render() {
     const line = el("span");
     const who = el("span", "who", s.names[m.p]);
     if (m.kind === "sent") {
-      line.append(el("b", "", upper(m.word)), " got sent back. It isn't a word.");
+      line.append(el("b", "", upper(m.word)), " got sent back. It isn't a word, but it stays so you can fix it.");
+    } else if (m.kind === "blocked") {
+      line.append(el("b", "", upper(m.word)), " was already served. Try another spot.");
     } else if (m.kind === "good") {
       line.append(who, " served ", el("b", "", upper(m.word)));
       if (m.note) line.append(" · " + m.note);
@@ -1580,7 +1601,7 @@ const SLIDES = [
   },
   {
     title: "Don't get sent back",
-    text: "Serve something that isn't a word and it's sent back: you lose 25 and the plate is cleared. Got a letter you can't use? Skip it.",
+    text: "Serve something that isn't a word and it's sent back: you lose 25, but the letters stay so you can fix it on a later turn. Each word can be served only once. Got a letter you can't use? Skip it.",
     demo: () => demoBox(demoRow(["t", "i", "l", "e", "x"], { sent: true, changed: 4, pts: "−25" })),
   },
   {
