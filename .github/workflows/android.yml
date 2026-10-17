@@ -1,0 +1,84 @@
+# Builds the Small Plates Android app on GitHub's machines.
+# Every push that touches the game makes a test APK you can install on a phone
+# (Actions tab -> latest "Android app" run -> Artifacts).
+# Once the release-signing secrets exist, it also makes the signed bundle for Google Play.
+name: Android app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "game.template.html"
+      - "build.js"
+      - "words-*.txt"
+      - "app/**"
+      - "assets/**"
+      - "android/**"
+      - "package.json"
+      - "package-lock.json"
+      - "capacitor.config.json"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      HAS_SIGNING: ${{ secrets.SIGNING_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Install
+        run: npm ci
+
+      - name: Build the game and copy it into the Android project
+        run: npm run android:sync
+
+      - name: Build the test APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload the test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: small-plates-test-${{ github.run_number }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Build the signed Google Play bundle
+        if: ${{ env.HAS_SIGNING == 'true' }}
+        working-directory: android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          SIGNING_KEYSTORE: ${{ runner.temp }}/upload.jks
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$SIGNING_KEYSTORE"
+          ./gradlew bundleRelease --no-daemon
+
+      - name: Upload the Google Play bundle
+        if: ${{ env.HAS_SIGNING == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: small-plates-play-${{ github.run_number }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90

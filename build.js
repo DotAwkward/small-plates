@@ -81,7 +81,8 @@ body { margin: 0; }
 </style>
 ${body}
 <script>
-if ("serviceWorker" in navigator) {
+// The store app ships its files inside the app, so it skips the offline service worker.
+if ("serviceWorker" in navigator && !window.Capacitor) {
   // When an update installs, reload once so the new version shows right away (the game is saved).
   const hadController = !!navigator.serviceWorker.controller;
   let reloaded = false;

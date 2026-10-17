@@ -459,6 +459,14 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 .how { display: flex; flex-direction: column; gap: 6px; }
 .how h3 { margin: 6px 0 0; font-family: var(--font-display); font-weight: 400; font-size: 1.1rem; }
 .how ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 4px; }
+.transfer {
+  width: 100%; font: 0.8rem/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace; padding: 10px 12px;
+  border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink);
+  resize: vertical; overflow-wrap: anywhere;
+}
+.transfer-note { font-size: 0.88rem; color: var(--muted); min-height: 1.2em; }
+.transfer-note.bad { color: var(--bad); }
+.transfer-note.good { color: var(--p2); }
 .how .mine { background: color-mix(in srgb, var(--rim) 10%, transparent); border-radius: 12px; padding: 4px 12px 10px; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -643,6 +651,8 @@ const KEY = {
   daily: date => STORE_KEY + "-daily-" + date,
 };
 const HOST_THEME = document.documentElement.getAttribute("data-theme");
+// True inside the Google Play app (Capacitor adds window.Capacitor before the page runs).
+const IN_APP = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform());
 
 let state = null;
 let flash = null; // { r, c, kind } for a one-shot animation
@@ -1192,7 +1202,11 @@ function shareText() {
 async function shareResult() {
   const text = shareText();
   const btn = $("againBtn");
-  if (navigator.share) {
+  const nativeShare = IN_APP && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
+  if (nativeShare) {
+    try { await nativeShare.share({ text, dialogTitle: "Share your Daily Table" }); return; }
+    catch (e) { /* cancelled or unavailable: fall through to copying */ }
+  } else if (navigator.share) {
     try { await navigator.share({ text }); return; }
     catch (e) { if (e && e.name === "AbortError") return; }
   }
@@ -1383,6 +1397,7 @@ function openMenu() {
     menuItem("Your stats", "On this phone", () => openPage("stats")),
     menuItem("How to play", "", () => openIntro(true)),
     menuItem("Settings", "", () => openPage("settings")),
+    menuItem("Move your games", "To the app or a new phone", () => openPage("move")),
     menuItem("About", "", () => openPage("about")),
   );
   if (canInstall()) list.append(menuItem("Add to home screen", "Get the app icon", () => openPage("install")));
@@ -1510,8 +1525,8 @@ let installEvent = null; // Android/Chrome's install prompt, saved for our own b
 const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isAndroid = () => /Android/i.test(navigator.userAgent);
-// Only the real website can be installed; not the installed app itself, and not a page shown inside another page.
-const canInstall = () => window.self === window.top && !isStandalone();
+// Only the real website can be installed; not the store app, not the installed web app, and not a page shown inside another page.
+const canInstall = () => !IN_APP && window.self === window.top && !isStandalone();
 
 window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
@@ -1572,12 +1587,126 @@ function renderInstall(body) {
   body.append(how);
 }
 
+/* ---------- Move your games (transfer code) ---------- */
+
+// A copy-and-paste code holding your unfinished table, today's Daily Table, stats and settings.
+// Used to move from the website to the store app, or to a new phone.
+const TRANSFER_PREFIX = "SP1-";
+
+function toBase64(text) {
+  const bytes = new TextEncoder().encode(text);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+function fromBase64(b64) {
+  const bin = atob(b64);
+  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+}
+
+function makeTransferCode() {
+  const g = loadGame(), d = loadDaily();
+  const data = {
+    v: 1,
+    game: g ? { ...g, history: [] } : null,
+    daily: d ? { ...d, history: [] } : null,
+    stats: readJSON(KEY.stats),
+    prefs: readJSON(KEY.prefs),
+    settings: readJSON(KEY.settings),
+  };
+  return TRANSFER_PREFIX + toBase64(JSON.stringify(data));
+}
+
+function readTransferCode(text) {
+  const code = (text || "").replace(/\s+/g, "");
+  if (!code.startsWith(TRANSFER_PREFIX)) return null;
+  try {
+    const data = JSON.parse(fromBase64(code.slice(TRANSFER_PREFIX.length)));
+    return data && data.v === 1 ? data : null;
+  } catch (e) { return null; }
+}
+
+function applyTransfer(data) {
+  const moved = [];
+  if (data.game && validGame(data.game)) { writeJSON(KEY.game, data.game); moved.push("your table"); }
+  if (data.daily && validGame(data.daily) && data.daily.date) { writeJSON(KEY.daily(data.daily.date), data.daily); moved.push("the Daily Table"); }
+  if (data.stats && data.stats.played) { writeJSON(KEY.stats, data.stats); moved.push("your stats"); }
+  if (data.prefs) writeJSON(KEY.prefs, data.prefs);
+  if (data.settings) { writeJSON(KEY.settings, data.settings); applyTheme(); moved.push("settings"); }
+  writeJSON(KEY.intro, true);
+  writeJSON(KEY.active, "game");
+  return moved;
+}
+
+function renderMove(body) {
+  const wrap = el("div", "how");
+  wrap.append(el("p", "", "Moving to the Small Plates app or a new phone? Copy your code here, then paste it into Small Plates on the other side. It carries your unfinished table, today's Daily Table, your stats and your settings."));
+
+  wrap.append(el("h3", "", "Copy from this phone"));
+  const out = el("textarea", "transfer");
+  out.id = "transferOut";
+  out.readOnly = true;
+  out.rows = 3;
+  out.value = makeTransferCode();
+  out.setAttribute("aria-label", "Your transfer code");
+  const copy = el("button", "btn primary", "Copy transfer code");
+  copy.type = "button";
+  copy.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(out.value); copy.textContent = "Copied"; }
+    catch (e) { out.focus(); out.select(); copy.textContent = "Selected, copy it"; }
+    setTimeout(() => { copy.textContent = "Copy transfer code"; }, 2500);
+  });
+  const copyRow = el("div", "actions");
+  copyRow.style.justifyContent = "flex-start";
+  copyRow.append(copy);
+  wrap.append(out, copyRow);
+
+  wrap.append(el("h3", "", "Paste onto this phone"));
+  const input = el("textarea", "transfer");
+  input.id = "transferIn";
+  input.rows = 3;
+  input.placeholder = "SP1-…";
+  input.setAttribute("aria-label", "Paste a transfer code");
+  const note = el("p", "transfer-note", "");
+  const go = el("button", "btn", "Move games here");
+  go.type = "button";
+  let armed = false;
+  input.addEventListener("input", () => { armed = false; go.textContent = "Move games here"; note.textContent = ""; });
+  go.addEventListener("click", () => {
+    const data = readTransferCode(input.value);
+    if (!data) {
+      note.textContent = "That doesn't look like a Small Plates transfer code. Copy the whole code and try again.";
+      note.className = "transfer-note bad";
+      return;
+    }
+    if (!armed) {
+      armed = true;
+      go.textContent = "Tap again to replace this phone's games";
+      note.textContent = "This replaces the games, stats and settings on this phone.";
+      note.className = "transfer-note";
+      return;
+    }
+    const moved = applyTransfer(data);
+    state = load() || newGame(prefs().mode, prefs().mode === "solo" ? [prefs().solo, ""] : prefs().names);
+    render();
+    note.textContent = moved.length ? "Moved " + moved.join(", ") + "." : "The code was empty, so nothing changed.";
+    note.className = "transfer-note good";
+    go.textContent = "Done";
+    go.disabled = true;
+  });
+  const goRow = el("div", "actions");
+  goRow.style.justifyContent = "flex-start";
+  goRow.append(go);
+  wrap.append(input, goRow, note);
+  body.append(wrap);
+}
+
 function openPage(which) {
-  const titles = { stats: "Your stats", settings: "Settings", about: "About", install: "Add to home screen" };
+  const titles = { stats: "Your stats", settings: "Settings", about: "About", install: "Add to home screen", move: "Move your games" };
   $("pageTitle").textContent = titles[which];
   const body = $("pageBody");
   body.replaceChildren();
-  ({ stats: renderStats, settings: renderSettings, about: renderAbout, install: renderInstall })[which](body);
+  ({ stats: renderStats, settings: renderSettings, about: renderAbout, install: renderInstall, move: renderMove })[which](body);
   showOverlay("page");
 }
 

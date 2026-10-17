@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Small Plates</string>
+    <string name="title_activity_main">Small Plates</string>
+    <string name="package_name">com.dotawkward.smallplates</string>
+    <string name="custom_url_scheme">com.dotawkward.smallplates</string>
+</resources>

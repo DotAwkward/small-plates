@@ -23,7 +23,9 @@ function Ring($g, [string]$hex, [double]$x, [double]$y, [double]$radius, [double
   $g.DrawEllipse($pen, [single]($cx - $rad), [single]($cy - $rad), [single](2 * $rad), [single](2 * $rad))
 }
 
-function Draw-Icon([int]$size, [string]$name, [bool]$rounded, [double]$zoom) {
+# $shape: "rounded" (plain icon), "square" (full-bleed, the phone applies its own mask),
+# "none" (artwork only, for Android's adaptive-icon foreground layer).
+function Draw-Icon([int]$size, [string]$name, [string]$shape, [double]$zoom) {
   $script:unit = $size / 120.0
   $script:zoom = $zoom
   $bmp = New-Object System.Drawing.Bitmap $size, $size
@@ -32,17 +34,19 @@ function Draw-Icon([int]$size, [string]$name, [bool]$rounded, [double]$zoom) {
   $g.TextRenderingHint = 'AntiAliasGridFit'
   $g.Clear([System.Drawing.Color]::Transparent)
 
-  # Background: rounded for the plain icon, full-bleed where the phone applies its own mask.
   $bg = Brush "#2c5aa0"
-  if ($rounded) {
+  $rounded = $shape -eq "rounded"
+  if ($shape -eq "none") {
+    # No background: Android draws the cobalt background layer itself.
+  } elseif ($rounded) {
     $d = 52 * $script:unit
-    $shape = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $shape.AddArc(0, 0, $d, $d, 180, 90)
-    $shape.AddArc($size - $d, 0, $d, $d, 270, 90)
-    $shape.AddArc($size - $d, $size - $d, $d, $d, 0, 90)
-    $shape.AddArc(0, $size - $d, $d, $d, 90, 90)
-    $shape.CloseFigure()
-    $g.FillPath($bg, $shape)
+    $outline = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $outline.AddArc(0, 0, $d, $d, 180, 90)
+    $outline.AddArc($size - $d, 0, $d, $d, 270, 90)
+    $outline.AddArc($size - $d, $size - $d, $d, $d, 0, 90)
+    $outline.AddArc(0, $size - $d, $d, $d, 90, 90)
+    $outline.CloseFigure()
+    $g.FillPath($bg, $outline)
   } else {
     $g.FillRectangle($bg, 0, 0, $size, $size)
   }
@@ -71,11 +75,23 @@ function Draw-Icon([int]$size, [string]$name, [bool]$rounded, [double]$zoom) {
   $g.Dispose(); $bmp.Dispose()
 }
 
-Draw-Icon 512 'icon-512.png' $true 1.0
-Draw-Icon 192 'icon-192.png' $true 1.0
-Draw-Icon 64 'favicon.png' $true 1.0
+Draw-Icon 512 'icon-512.png' "rounded" 1.0
+Draw-Icon 192 'icon-192.png' "rounded" 1.0
+Draw-Icon 64 'favicon.png' "rounded" 1.0
 # iOS rounds the corners itself and turns transparency black, so this one is full-bleed.
-Draw-Icon 180 'apple-touch-icon.png' $false 1.0
+Draw-Icon 180 'apple-touch-icon.png' "square" 1.0
 # Android's maskable icon: artwork shrunk to stay inside the circle the phone may crop to.
-Draw-Icon 512 'maskable-512.png' $false 0.8
-Get-ChildItem $out -Filter *.png | Select-Object Name, Length
+Draw-Icon 512 'maskable-512.png' "square" 0.8
+
+# Store app sources (Android launcher icons are generated from these), plus the Play Store listing icon.
+$store = Join-Path (Split-Path $PSScriptRoot) "assets"
+New-Item -ItemType Directory -Force $store | Out-Null
+$out = $store
+Draw-Icon 1024 'icon-only.png' "square" 1.0
+# Adaptive icon foreground: Android keeps only the middle ~61%, so the artwork is shrunk to fit.
+Draw-Icon 1024 'icon-foreground.png' "none" 0.62
+$bmp = New-Object System.Drawing.Bitmap 1024, 1024
+$gfx = [System.Drawing.Graphics]::FromImage($bmp); $gfx.Clear((Hex "#2c5aa0")); $gfx.Dispose()
+$bmp.Save((Join-Path $store 'icon-background.png'), [System.Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
+Draw-Icon 512 'play-store-icon-512.png' "square" 1.0
+Get-ChildItem (Join-Path $PSScriptRoot "icons"), $store -Filter *.png | Select-Object Name, Length
