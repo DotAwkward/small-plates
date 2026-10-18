@@ -43,9 +43,9 @@ Small Plates is a Dot Awkward game: small games for odd moments.
 
 **Contact details**
 - Email: hello@dotawkward.com
-- Website: https://dotawkward.github.io/
+- Website: https://dotawkward.com/
 
-**Privacy policy:** https://dotawkward.github.io/privacy/
+**Privacy policy:** https://dotawkward.com/privacy/
 
 ## Graphics (files in this folder)
 
@@ -57,7 +57,7 @@ Small Plates is a Dot Awkward game: small games for odd moments.
 
 ## App content (Policy → App content)
 
-**Privacy policy:** https://dotawkward.github.io/privacy/
+**Privacy policy:** https://dotawkward.com/privacy/
 
 **Ads:** No, my app does not contain ads.
 

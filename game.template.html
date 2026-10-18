@@ -711,7 +711,7 @@ const SPECIAL_BONUS = { 4: 100, 5: 200 };
 const SENT_BACK = 25;
 const COLS = 5, ROWS = 4; // 5 spots per plate, 4 plates (games saved before this keep their 5 plates)
 const DECK_SIZE = 40; // letters per game; keep newDeck's mix in step with this
-const SITE_URL = "https://dotawkward.github.io/small-plates/";
+const SITE_URL = "https://dotawkward.com/small-plates/";
 const DAILY_EPOCH = Date.UTC(2026, 9, 17); // Daily Special #1
 const STORE_KEY = "small-plates-v1";
 const KEY = {
@@ -1618,7 +1618,7 @@ function renderSettings(body) {
 function privacyLink() {
   const p = el("p", "muted");
   const a = el("a", "", "Read the full privacy policy");
-  a.href = "https://dotawkward.github.io/privacy/";
+  a.href = "https://dotawkward.com/privacy/";
   a.target = "_blank";
   a.rel = "noopener";
   p.append(a);
