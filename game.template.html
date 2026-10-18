@@ -189,9 +189,11 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
   line-height: 1;
   position: relative;
 }
+/* Letter values: big and dark enough to read at a glance; the letter sits a little high to make room. */
+.plate { padding-bottom: 13%; }
 .plate .v {
-  position: absolute; left: 0; right: 0; bottom: 15%; text-align: center;
-  font-family: var(--font-body); font-weight: 700; font-size: 0.55rem; opacity: 0.5;
+  position: absolute; left: 0; right: 0; bottom: 11%; text-align: center;
+  font-family: var(--font-body); font-weight: 800; font-size: 0.72rem; line-height: 1; opacity: 0.78;
 }
 .cell.filled:not(:disabled):hover .plate { transform: translateY(-1px); }
 .course {
@@ -254,7 +256,8 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
   font-family: var(--font-tile); font-size: 2.3rem; line-height: 1;
   display: grid; place-items: center; position: relative;
 }
-.current .v { position: absolute; left: 0; right: 0; bottom: 14%; text-align: center; font-family: var(--font-body); font-weight: 700; font-size: 0.7rem; opacity: 0.5; }
+.current { padding-bottom: 12%; }
+.current .v { position: absolute; left: 0; right: 0; bottom: 11%; text-align: center; font-family: var(--font-body); font-weight: 800; font-size: 0.85rem; line-height: 1; opacity: 0.78; }
 .ticket-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .next { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
 .mini {
@@ -517,6 +520,19 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
   .pop, .shake { animation: none; }
   .player, .ticket { transition: none; }
 }
+/* Computer screens and tablets: a wider table, bigger plates and bigger text. Everything sized in rem grows with the root size. */
+@media (min-width: 760px) and (min-height: 700px) {
+  html { font-size: 18px; }
+  body { font-size: 17px; }
+  .app, .home { max-width: 560px; }
+  .sheet { max-width: 460px; }
+}
+@media (min-width: 1100px) and (min-height: 1000px) {
+  html { font-size: 20px; }
+  .app, .home { max-width: 620px; }
+  .sheet { max-width: 500px; }
+}
+
 @media (max-width: 360px) {
   .pscore { font-size: 1.5rem; }
   .brand h1 { font-size: 1.4rem; }
