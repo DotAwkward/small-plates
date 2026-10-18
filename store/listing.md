@@ -19,8 +19,8 @@ The kitchen sends out one letter at a time. Put it on one of four plates, swap i
 PLAY YOUR WAY
 • Table for one: chase your best score.
 • Table for two: pass the phone across the table and take turns, one letter each.
-• The Daily Table: everyone gets the same letters each day. One try, no undo, and a result card to share with friends.
-• Endless tables: the letters keep coming and the specials keep changing until you close the check.
+• The Daily Special: everyone gets the same letters each day. One try, no undo, and a result card to share with friends.
+• All you can eat: the letters keep coming and the specials keep changing until you close the check.
 
 LITTLE THINGS THAT MAKE IT FUN
 • Today's specials: spell the chef's words for big bonus points.
@@ -85,4 +85,4 @@ Google's definition of "collected" means sent off the device, so saved games and
 
 ## Release notes for the first test
 
-Welcome to Small Plates! This is an early test version. Play a few rounds, try the Daily Table, and tell us what feels off at hello@dotawkward.com.
+Welcome to Small Plates! This is an early test version. Play a few rounds, try the Daily Special, and tell us what feels off at hello@dotawkward.com.

@@ -17,7 +17,7 @@ Hi! I made a little word game called Small Plates and I'm getting it ready for t
 1. Send me the Gmail address you use on your phone.
 2. Once I've added you, tap this link and choose "Become a tester": [OPT-IN LINK]
 3. Install Small Plates from the Play Store link on that page.
-4. Keep it installed for 14 days. Playing the Daily Table now and then is perfect.
+4. Keep it installed for 14 days. Playing the Daily Special now and then is perfect.
 
 Thank you! If anything feels confusing or broken, tell me. That's exactly what I'm hoping to find.
 
@@ -27,7 +27,7 @@ Thank you! If anything feels confusing or broken, tell me. That's exactly what I
 
 Hi,
 
-I've been making small phone games under the name Dot Awkward, and the first one, Small Plates, is almost ready for the Google Play Store. It's a cozy word game: letters come out one at a time, you build words on little plates, and you keep turning each word into the next one (TIN, TINE, TILE, TILED). You can play alone, pass the phone back and forth with someone, or try the Daily Table, where everyone gets the same letters each day.
+I've been making small phone games under the name Dot Awkward, and the first one, Small Plates, is almost ready for the Google Play Store. It's a cozy word game: letters come out one at a time, you build words on little plates, and you keep turning each word into the next one (TIN, TINE, TILE, TILED). You can play alone, pass the phone back and forth with someone, or try the Daily Special, where everyone gets the same letters each day.
 
 Before Google lets a new developer publish, 12 people have to test the app for 14 days in a row. I'd love for you to be one of them. It's free, there are no ads, and it doesn't collect anything about you.
 
@@ -35,7 +35,7 @@ Here's how:
 1. Reply with the Gmail address you use on your Android phone.
 2. After I add you, open this link on your phone and tap "Become a tester": [OPT-IN LINK]
 3. Install Small Plates from the Play Store page that link opens.
-4. Keep it installed for the next 14 days. Open it when you have a spare minute. The Daily Table is a nice daily habit.
+4. Keep it installed for the next 14 days. Open it when you have a spare minute. The Daily Special is a nice daily habit.
 
 If something seems confusing, broken or just not fun, please tell me at hello@dotawkward.com. Honest feedback is the most helpful thing you can give me.
 

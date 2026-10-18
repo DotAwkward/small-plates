@@ -627,8 +627,8 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
         <li>Each word can be served only once per game. If a spot would make a word that's already been served, the letter can't go there.</li>
         <li>Spell one of today's specials for a big bonus.</li>
         <li>A regular game ends when all 40 letters are used.</li>
-        <li>Turn on <strong>Endless</strong> when you start a new table and the letters keep coming. Specials refresh as they are served. When you are done, choose Close the check in the menu.</li>
-        <li>The <strong>Daily Table</strong> deals everyone the same letters and specials each day. You get one try, with no undo, and a fresh table at midnight.</li>
+        <li>Turn on <strong>All you can eat</strong> when you start a new table and the letters keep coming. Specials refresh as they are served. When you are done, choose Close the check in the menu.</li>
+        <li>The <strong>Daily Special</strong> deals everyone the same letters and specials each day. You get one try, with no undo, and a fresh table at midnight.</li>
       </ul>
       <p>Scoring: add up the letter values, then ×10 for a 3-letter word, ×15 for 4, ×25 for 5, and ×35 for a 6-letter Qu word. Each extra course adds 15. Specials add 100 (4 letters) or 200 (5 letters).</p>
     </div>
@@ -657,11 +657,11 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
     <div class="field f1"><label for="in0" id="in0Label">Goes first</label><input id="in0" maxlength="14" autocomplete="off"></div>
     <div class="field f2" id="field1"><label for="in1">Goes second</label><input id="in1" maxlength="14" autocomplete="off"></div>
     <div class="setting" id="endlessRow">
-      <label class="st-text" for="endlessIn">Endless table<small>Letters keep coming until you close the check</small></label>
+      <label class="st-text" for="endlessIn">All you can eat<small>Letters keep coming until you close the check</small></label>
       <span class="switch"><input type="checkbox" id="endlessIn" role="switch"><span></span></span>
     </div>
     <p id="setupNote">Names stay on this phone.</p>
-    <button class="linkish" type="button" id="setupDaily">Or play today's Daily Table →</button>
+    <button class="linkish" type="button" id="setupDaily">Or play today's Daily Special →</button>
     <div class="actions">
       <button class="btn" type="button" id="cancelSetup">Cancel</button>
       <button class="btn primary" type="submit">Seat us</button>
@@ -712,7 +712,7 @@ const SENT_BACK = 25;
 const COLS = 5, ROWS = 4; // 5 spots per plate, 4 plates (games saved before this keep their 5 plates)
 const DECK_SIZE = 40; // letters per game; keep newDeck's mix in step with this
 const SITE_URL = "https://dotawkward.github.io/small-plates/";
-const DAILY_EPOCH = Date.UTC(2026, 9, 17); // Daily Table #1
+const DAILY_EPOCH = Date.UTC(2026, 9, 17); // Daily Special #1
 const STORE_KEY = "small-plates-v1";
 const KEY = {
   game: STORE_KEY + "-game",
@@ -733,7 +733,7 @@ let flash = null; // { r, c, kind } for a one-shot animation
 
 const $ = id => document.getElementById(id);
 
-/* ---------- Randomness (seeded for the Daily Table) ---------- */
+/* ---------- Randomness (seeded for the Daily Special) ---------- */
 
 function seeded(str) {
   let h = 1779033703 ^ str.length;
@@ -912,7 +912,7 @@ function newGame(mode, names, date = null, endless = false) {
 }
 
 function snapshot() {
-  if (state.mode === "daily") return; // no undo in the Daily Table
+  if (state.mode === "daily") return; // no undo in the Daily Special
   state.history.push(JSON.parse(JSON.stringify({ ...state, history: [] })));
   if (state.history.length > 30) state.history.shift();
 }
@@ -1110,19 +1110,19 @@ function render() {
   const s = state, p = s.turn, one = solo();
   const st = getStats();
   document.documentElement.style.setProperty("--pc", pColor(p));
-  $("tableSize").textContent = daily() ? "daily #" + dailyNumber(s.date) : s.endless ? "endless" : one ? "for one" : "for two";
+  $("tableSize").textContent = daily() ? "daily #" + dailyNumber(s.date) : s.endless ? "all you can eat" : one ? "for one" : "for two";
 
   // The bill
   $("name0").textContent = s.names[0];
   $("score0").textContent = fmt(s.scores[0]);
-  $("turn0").textContent = daily() ? "Daily Table" : one ? "Playing solo" : "You're up";
+  $("turn0").textContent = daily() ? "Daily Special" : one ? "Playing solo" : "You're up";
   $("card0").classList.toggle("active", !s.over && (one || p === 0));
   const c1 = $("card1");
   c1.classList.toggle("best", one);
   c1.classList.toggle("active", !one && !s.over && p === 1);
   if (one) {
     const best = daily() ? st.bestDaily : s.endless ? st.bestEndless : st.bestSolo;
-    $("name1").textContent = daily() ? "Daily best" : s.endless ? "Endless best" : "Your best";
+    $("name1").textContent = daily() ? "Daily best" : s.endless ? "Best feast" : "Your best";
     $("score1").textContent = best ? fmt(best) : "–";
     $("turn1").textContent = daily() ? currentStreak(st) + " day streak" : "on this phone";
   } else {
@@ -1300,7 +1300,7 @@ function shareText() {
   const s = state;
   const plates = s.rowLog.map(r => (r.length ? r.map(x => (x === "s" ? "🟥" : "🟩")).join("") : "⬜"));
   const stars = s.specials.map(x => (x.by !== null ? "⭐" : "☆")).join("");
-  return "Small Plates · Daily Table #" + dailyNumber(s.date) + "\n" +
+  return "Small Plates · Daily Special #" + dailyNumber(s.date) + "\n" +
     "🍽️ " + fmt(s.scores[0]) + " points\n" +
     plates.join("\n") + "\n" +
     "Specials " + stars + "\n" + SITE_URL;
@@ -1311,7 +1311,7 @@ async function shareResult() {
   const btn = $("againBtn");
   const nativeShare = IN_APP && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
   if (nativeShare) {
-    try { await nativeShare.share({ text, dialogTitle: "Share your Daily Table" }); return; }
+    try { await nativeShare.share({ text, dialogTitle: "Share your Daily Special" }); return; }
     catch (e) { /* cancelled or unavailable: fall through to copying */ }
   } else if (navigator.share) {
     try { await navigator.share({ text }); return; }
@@ -1346,8 +1346,8 @@ function showEnd() {
   stopCountdown();
   if (daily()) {
     const num = dailyNumber(s.date);
-    $("endTitle").textContent = s.newBest ? "Daily Table #" + num + ": your best yet!" : "Daily Table #" + num + " is served";
-    const tick = () => { $("endNote").textContent = "A new Daily Table opens in " + untilMidnight() + "."; };
+    $("endTitle").textContent = s.newBest ? "Daily Special #" + num + ": your best yet!" : "Daily Special #" + num + " is served";
+    const tick = () => { $("endNote").textContent = "A new Daily Special opens in " + untilMidnight() + "."; };
     tick();
     countdownTimer = setInterval(tick, 30000);
     const card = el("div", "player");
@@ -1362,7 +1362,7 @@ function showEnd() {
   } else if (solo()) {
     const bestHere = s.endless ? st.bestEndless : st.bestSolo;
     const served = s.log.filter(x => x.kind === "word").length;
-    $("endTitle").textContent = s.newBest ? (s.endless ? "New endless best!" : "New best score!") : "Check, please!";
+    $("endTitle").textContent = s.newBest ? (s.endless ? "New all-you-can-eat best!" : "New best score!") : "Check, please!";
     $("endNote").textContent = (s.endless ? "You served " + served + " dishes from " + s.pos + " letters. " : "") +
       (s.newBest ? "That's your best yet on this phone." : "Your best on this phone is " + fmt(bestHere) + ".");
     const card = el("div", "player");
@@ -1383,7 +1383,7 @@ function showEnd() {
   showOverlay("end");
 }
 
-/* ---------- New table and Daily Table ---------- */
+/* ---------- New table and Daily Special ---------- */
 
 function setupMode() { return $("modeSolo").checked ? "solo" : "duo"; }
 function syncSetup() {
@@ -1473,7 +1473,7 @@ function anotherRound() {
   closeOverlays();
 }
 
-// Where to go once a game is finished: a new round, or out of the Daily Table.
+// Where to go once a game is finished: a new round, or out of the Daily Special.
 const unfinishedTable = () => { const g = loadGame(); return g && !g.over && g.pos > 0 ? g : null; };
 function leaveLabel() {
   if (!state || !daily()) return "Another round";
@@ -1509,13 +1509,13 @@ function openMenu() {
   const d = loadDaily(today);
   const dailySub = el("span", "mi-sub");
   dailySub.append(el("span", "pill", d ? (d.over ? "Served · " + fmt(d.scores[0]) : "In progress") : "New today"));
-  list.append(menuItem("Daily Table #" + dailyNumber(today), dailySub, startDaily, true));
+  list.append(menuItem("Daily Special #" + dailyNumber(today), dailySub, startDaily, true));
   const g = loadGame();
   if (daily() && g && !g.over && g.pos > 0) {
     list.append(menuItem("Back to your table", (g.mode === "duo" ? "For two" : "For one") + " · " + (g.deck.length - g.pos) + " letters left", resumeGame));
   }
   list.append(
-    ...(state && state.endless && !state.over ? [menuItem("Close the check", "End this endless table", () => { closeOverlays(); closeCheck(); })] : []),
+    ...(state && state.endless && !state.over ? [menuItem("Close the check", "Stop the letters and get the check", () => { closeOverlays(); closeCheck(); })] : []),
     menuItem("New table", "For one or two", () => openSetup(false)),
     menuItem("Your stats", "On this phone", () => openPage("stats")),
     menuItem("How to play", "", () => openIntro(true)),
@@ -1543,9 +1543,9 @@ function renderStats(body) {
   const total = st.played.solo + st.played.duo + st.played.daily + (st.played.endless || 0);
   const grid = el("div", "stats-grid");
   grid.append(
-    tile("Games played", fmt(total), st.played.solo + " solo · " + st.played.duo + " for two · " + st.played.daily + " daily · " + (st.played.endless || 0) + " endless", { wide: true }),
+    tile("Games played", fmt(total), st.played.solo + " solo · " + st.played.duo + " for two · " + st.played.daily + " daily · " + (st.played.endless || 0) + " all you can eat", { wide: true }),
     tile("Best solo", st.bestSolo ? fmt(st.bestSolo) : "–"),
-    tile("Best endless", st.bestEndless ? fmt(st.bestEndless) : "–", "Playing solo"),
+    tile("Best all you can eat", st.bestEndless ? fmt(st.bestEndless) : "–", "Playing solo"),
     tile("Best daily", st.bestDaily ? fmt(st.bestDaily) : "–"),
     tile("Daily streak", String(currentStreak(st)), "Best " + st.maxStreak),
     tile("Specials", fmt(st.specials), "served"),
@@ -1724,7 +1724,7 @@ function renderInstall(body) {
 
 /* ---------- Move your games (transfer code) ---------- */
 
-// A copy-and-paste code holding your unfinished table, today's Daily Table, stats and settings.
+// A copy-and-paste code holding your unfinished table, today's Daily Special, stats and settings.
 // Used to move from the website to the store app, or to a new phone.
 const TRANSFER_PREFIX = "SP1-";
 
@@ -1764,7 +1764,7 @@ function readTransferCode(text) {
 function applyTransfer(data) {
   const moved = [];
   if (data.game && validGame(data.game)) { writeJSON(KEY.game, data.game); moved.push("your table"); }
-  if (data.daily && validGame(data.daily) && data.daily.date) { writeJSON(KEY.daily(data.daily.date), data.daily); moved.push("the Daily Table"); }
+  if (data.daily && validGame(data.daily) && data.daily.date) { writeJSON(KEY.daily(data.daily.date), data.daily); moved.push("the Daily Special"); }
   if (data.stats && data.stats.played) { writeJSON(KEY.stats, data.stats); moved.push("your stats"); }
   if (data.prefs) writeJSON(KEY.prefs, data.prefs);
   if (data.settings) { writeJSON(KEY.settings, data.settings); applyTheme(); moved.push("settings"); }
@@ -1775,7 +1775,7 @@ function applyTransfer(data) {
 
 function renderMove(body) {
   const wrap = el("div", "how");
-  wrap.append(el("p", "", "Moving to the Small Plates app or a new phone? Copy your code here, then paste it into Small Plates on the other side. It carries your unfinished table, today's Daily Table, your stats and your settings."));
+  wrap.append(el("p", "", "Moving to the Small Plates app or a new phone? Copy your code here, then paste it into Small Plates on the other side. It carries your unfinished table, today's Daily Special, your stats and your settings."));
 
   wrap.append(el("h3", "", "Copy from this phone"));
   const out = el("textarea", "transfer");
@@ -1917,7 +1917,7 @@ const SLIDES = [
   },
   {
     title: "Order the specials",
-    text: "Spell one of today's specials for a big bonus. Play for one to beat your best, pass the phone with two, or try the Daily Table: the same letters for everyone, once a day.",
+    text: "Spell one of today's specials for a big bonus. Play for one to beat your best, pass the phone with two, or try the Daily Special: the same letters for everyone, once a day.",
     demo: () => {
       const board = el("div", "specials");
       board.append(el("h2", "", "Today's specials"));
@@ -2062,7 +2062,7 @@ function homeCard(kind, title, sub, onClick, pill) {
 }
 
 function tableSummary(g) {
-  const kind = g.endless ? (g.mode === "duo" ? "Endless for two" : "Endless") : g.mode === "duo" ? "For two" : "For one";
+  const kind = g.endless ? (g.mode === "duo" ? "All you can eat for two" : "All you can eat") : g.mode === "duo" ? "For two" : "For one";
   const score = g.mode === "duo"
     ? g.names[0] + " " + fmt(g.scores[0]) + ", " + g.names[1] + " " + fmt(g.scores[1])
     : fmt(g.scores[0]) + " points";
@@ -2079,14 +2079,14 @@ function renderHome() {
   const today = dateStr();
   const d = loadDaily(today);
   const status = d ? (d.over ? "Served · " + fmt(d.scores[0]) : "In progress") : "New today";
-  cards.append(homeCard("daily", "Daily Table #" + dailyNumber(today), "Same letters for everyone", startDaily, status));
+  cards.append(homeCard("daily", "Daily Special #" + dailyNumber(today), "Same letters for everyone", startDaily, status));
 
   cards.append(el("div", "modes-h", "New table"));
   const modes = el("div", "home-modes");
   [
     ["For one", "Beat your best", { mode: "solo", endless: false }],
     ["For two", "One letter each", { mode: "duo", endless: false }],
-    ["Endless", "Letters keep coming", { endless: true }],
+    ["All you can eat", "Letters keep coming", { endless: true }],
   ].forEach(([title, sub, preset]) => {
     const b = el("button", "mode-btn");
     b.type = "button";
