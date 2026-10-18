@@ -171,10 +171,11 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
   padding: 0;
   display: grid; place-items: center;
 }
-.cell.target { border: 2px dashed var(--pc); background: color-mix(in srgb, var(--pc) 12%, transparent); cursor: pointer; }
-.cell.target:hover { background: color-mix(in srgb, var(--pc) 24%, transparent); }
-.cell.target.open { border: 1.5px dashed color-mix(in srgb, var(--pc) 40%, var(--line)); background: transparent; }
-.cell.target.open:hover { background: color-mix(in srgb, var(--pc) 14%, transparent); }
+/* Spots you can play get a solid fill and a strong ring so they still read in glare. */
+.cell.target { border: 2.5px dashed var(--pc); background: color-mix(in srgb, var(--pc) 24%, var(--surface)); cursor: pointer; }
+.cell.target:hover { background: color-mix(in srgb, var(--pc) 36%, var(--surface)); }
+.cell.target.open { border: 2px dashed color-mix(in srgb, var(--pc) 75%, var(--surface)); background: color-mix(in srgb, var(--pc) 8%, var(--surface)); }
+.cell.target.open:hover { background: color-mix(in srgb, var(--pc) 20%, var(--surface)); }
 .cell.filled { border: none; cursor: pointer; }
 .cell.filled:disabled { cursor: default; }
 .plate {
