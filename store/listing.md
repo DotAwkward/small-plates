@@ -25,7 +25,7 @@ PLAY YOUR WAY
 LITTLE THINGS THAT MAKE IT FUN
 • Today's specials: spell the chef's words for big bonus points.
 • The Qu plate: Q always comes with its U, so QUIET and SQUAT are fair game.
-• Sent back: serve something that isn't a word and you lose points, but the letters stay so you can fix it on a later turn.
+• Sent back: serve something that isn't a word and you lose points and the plate is cleared.
 • Each word can only be served once per game, so think ahead.
 • Stats for your best dish, longest chain, streaks and more.
 • A short, friendly How to play the first time you open it.

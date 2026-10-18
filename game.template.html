@@ -606,7 +606,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
         <li>Keep turning a plate into new words, each one another course: <span class="ex">TIN → TINE → TILE → TILED</span>. Every course adds a bonus.</li>
         <li>A plate with only one or two letters on it isn't a dish yet, so it isn't checked.</li>
         <li>The Q always comes with its U. The <span class="ex">QU</span> plate takes one spot but spells two letters, so <span class="ex">QU·I·T</span> is QUIT.</li>
-        <li>Serve something that isn't a word and it gets <strong>sent back</strong>: you lose 25 and the plate's courses start over. The letters stay, so you or the other player can fix it on a later turn.</li>
+        <li>Serve something that isn't a word and it gets <strong>sent back</strong>: you lose 25 and the plate is cleared.</li>
         <li>Don't want a letter? Skip it. It's gone for good, and that counts as your turn.</li>
         <li>Each word can be served only once per game. If a spot would make a word that's already been served, the letter can't go there.</li>
         <li>Spell one of today's specials for a big bonus.</li>
@@ -988,12 +988,12 @@ function place(r, c) {
     return finishMove(true);
   }
 
-  // Not a word: sent back to the kitchen. The letters stay on the plate so it can be fixed on a later turn.
+  // Not a word: sent back to the kitchen, and the plate is cleared.
   state.scores[p] -= SENT_BACK;
   state.rowLog[r].push("s");
   state.log.push({ p, w, pts: -SENT_BACK, kind: "sent" });
   state.msg = { kind: "sent", p, word: w, pts: -SENT_BACK };
-  row.word = null; row.course = 0; row.bad = true;
+  state.rows[r] = { cells: Array(COLS).fill(null), word: null, course: 0, bad: false };
   flash = { r, c: -1, kind: "shake" };
   feedback("sent");
   finishMove(true);
@@ -1185,7 +1185,7 @@ function render() {
     const line = el("span");
     const who = el("span", "who", s.names[m.p]);
     if (m.kind === "sent") {
-      line.append(el("b", "", upper(m.word)), " got sent back. It isn't a word, but it stays so you can fix it.");
+      line.append(el("b", "", upper(m.word)), " got sent back. It isn't a word, so the plate is cleared.");
     } else if (m.kind === "blocked") {
       line.append(el("b", "", upper(m.word)), " was already served. Try another spot.");
     } else if (m.kind === "good") {
@@ -1896,7 +1896,7 @@ const SLIDES = [
   },
   {
     title: "Don't get sent back",
-    text: "Serve something that isn't a word and it's sent back: you lose 25, but the letters stay so you can fix it on a later turn. Each word can be served only once. Got a letter you can't use? Skip it.",
+    text: "Serve something that isn't a word and it's sent back: you lose 25 and the plate is cleared. Each word can be served only once. Got a letter you can't use? Skip it.",
     demo: () => demoBox(demoRow(["t", "i", "l", "e", "x"], { sent: true, changed: 4, pts: "−25" })),
   },
   {
