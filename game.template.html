@@ -140,6 +140,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
   padding: 8px 14px 10px;
   display: flex; align-items: baseline; gap: 4px 14px; flex-wrap: wrap;
 }
+.specials[hidden] { display: none; }
 .specials h2 { margin: 0; font-family: var(--font-chalk); font-weight: 700; font-size: 1.35rem; line-height: 1.1; }
 .special { font-family: var(--font-chalk); font-weight: 600; font-size: 1.3rem; line-height: 1.1; display: inline-flex; align-items: baseline; gap: 5px; }
 .special small { font-family: var(--font-body); font-weight: 700; font-size: 0.72rem; color: var(--saffron); }
@@ -636,12 +637,11 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
         <li>Serve something that isn't a word and it gets <strong>sent back</strong>: you lose 25 and the plate is cleared.</li>
         <li>Don't want a letter? Skip it. It's gone for good, and that counts as your turn.</li>
         <li>Each word can be served only once per game. If a spot would make a word that's already been served, the letter can't go there.</li>
-        <li>Spell one of today's specials for a big bonus.</li>
         <li>A regular game ends when all 40 letters are used.</li>
-        <li>Turn on <strong>All you can eat</strong> when you start a new table and the letters keep coming. Specials refresh as they are served. When you are done, choose Close the check in the menu.</li>
-        <li>The <strong>Daily Special</strong> deals everyone the same letters and specials each day. You get one try, with no undo, and a fresh table at midnight.</li>
+        <li>Turn on <strong>All you can eat</strong> when you start a new table and the letters keep coming. When you are done, choose Close the check in the menu.</li>
+        <li>The <strong>Daily Special</strong> deals everyone the same letters each day, with three specials to spell for a big bonus. Every special can be made from that day's letters. You get one try, with no undo, and a fresh table at midnight.</li>
       </ul>
-      <p>Scoring: add up the letter values, then ×10 for a 3-letter word, ×15 for 4, ×25 for 5, and ×35 for a 6-letter Qu word. Each extra course adds 15. Specials add 100 (4 letters) or 200 (5 letters).</p>
+      <p>Scoring: add up the letter values, then ×10 for a 3-letter word, ×15 for 4, ×25 for 5, and ×35 for a 6-letter Qu word. Each extra course adds 15. In the Daily Special, specials add 100 (4 letters) or 200 (5 letters).</p>
     </div>
   </details>
 </div>
@@ -897,10 +897,135 @@ function newDeck(rnd) {
   return shuffle(letters.map(c => c.toLowerCase()), rnd);
 }
 
+// The quickest way to build `target` on one plate from the deck, using only letters not in `taken`
+// and never serving a word in `avoid`. Every 3+ letter step must be a word (or the plate is sent back).
+// To stay quick it only looks at plates lined up with the special: words at most 2 letters off it,
+// and the first 1 or 2 letters at most 1 off.
+// Returns { used: deck indexes, words: words served on the way } or null if it can't be done.
+function platePath(deck, target, taken, avoid) {
+  const goal = target.replace(/qu/g, "q"); // a plate holds "q" for the Qu letter
+  const said = s => s.replace(/q/g, "qu");
+  // A plate is "where it sits in the special:letters", e.g. "1:at" on the way to "pasta".
+  const split = k => { const c = k.indexOf(":"); return [+k.slice(0, c), k.slice(c + 1)]; };
+  const off = (o, s) => { let n = 0; for (let i = 0; i < s.length; i++) if (s[i] !== goal[o + i]) n++; return n; };
+  const ok = (o, s) => s.length < 3 ? off(o, s) <= 1 : off(o, s) <= 2 && DICT.has(said(s)) && !avoid.has(said(s));
+  const letters = [...new Set(deck)];
+  // nextAt[i][ch]: the first free deck spot at or after i holding ch.
+  const nextAt = Array(deck.length + 1);
+  nextAt[deck.length] = {};
+  for (let i = deck.length - 1; i >= 0; i--) {
+    nextAt[i] = { ...nextAt[i + 1] };
+    if (!taken.has(i)) nextAt[i][deck[i]] = i;
+  }
+  // Plates only change by using a later letter, so visit them in deck order (earliest arrival wins).
+  const best = new Map([["", { at: -1, from: null }]]);
+  const queue = Array.from({ length: deck.length + 1 }, () => []);
+  queue[0].push("");
+  for (let b = 0; b < queue.length; b++) {
+    for (const k of queue[b]) {
+      const { at } = best.get(k);
+      if (b !== at + 1) continue; // reached sooner some other way
+      if (k === "0:" + goal) {
+        const used = [], words = [];
+        for (let x = k; x; x = best.get(x).from) {
+          used.push(best.get(x).at);
+          const s = split(x)[1];
+          if (s.length >= 3) words.push(said(s));
+        }
+        return { used, words };
+      }
+      const [o, s] = k ? split(k) : [0, ""];
+      for (const ch of letters) {
+        const j = nextAt[at + 1][ch];
+        if (j === undefined) continue;
+        const nexts = [];
+        if (!s) for (let p = 0; p < goal.length; p++) nexts.push([p, ch]);
+        else {
+          if (o > 0) nexts.push([o - 1, ch + s]);
+          if (o + s.length < goal.length) nexts.push([o, s + ch]);
+          for (let i = 0; i < s.length; i++) if (s[i] !== ch) nexts.push([o, s.slice(0, i) + ch + s.slice(i + 1)]);
+        }
+        for (const [no, ns] of nexts) {
+          const n = no + ":" + ns;
+          if (!ok(no, ns) || (best.has(n) && best.get(n).at <= j)) continue;
+          best.set(n, { at: j, from: k });
+          queue[j + 1].push(n);
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// Can all of these specials be served in one game, each on its own plate with its own letters?
+// `alone` can hold each word's path on an empty table, which often settles it straight away.
+function servableTogether(deck, words, alone = new Map()) {
+  // Quick no: the finished plates need more of some letter than the deck has (two specials, one P).
+  const left = {};
+  deck.forEach(ch => { left[ch] = (left[ch] || 0) + 1; });
+  for (const ch of words.join("").replace(/qu/g, "q")) if (!(--left[ch] >= 0)) return false;
+  // Quick yes: their own paths don't share a letter or a word.
+  const paths = words.map(w => alone.get(w));
+  if (paths.every(Boolean)) {
+    const idx = paths.flatMap(p => p.used), said = paths.flatMap(p => p.words);
+    if (new Set(idx).size === idx.length && new Set(said).size === said.length) return true;
+  }
+  const orders = words.length === 3
+    ? [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]] : [words.map((_, i) => i)];
+  return orders.some(order => {
+    const taken = new Set(), avoid = new Set(words);
+    return order.every(k => {
+      avoid.delete(words[k]);
+      const p = platePath(deck, words[k], taken, avoid);
+      avoid.add(words[k]);
+      if (!p) return false;
+      p.used.forEach(i => taken.add(i));
+      p.words.forEach(w => avoid.add(w));
+      return true;
+    });
+  });
+}
+
+// The Daily Special's letters and specials, the same for everyone on a date.
+// Specials are always ones you can actually serve from that day's letters.
+function dailyDeal(date) {
+  const rnd = seeded("small-plates/" + date);
+  for (let tries = 0; tries < 10; tries++) {
+    const deck = newDeck(rnd);
+    // Shuffled the same way as before this check, so days that already worked keep their specials.
+    const fours = shuffle(SPECIALS4.slice(), rnd), fives = shuffle(SPECIALS5.slice(), rnd);
+    const alone = new Map();
+    const can = w => {
+      if (!alone.has(w)) alone.set(w, platePath(deck, w, new Set(), new Set()));
+      return !!alone.get(w);
+    };
+    // Try them in shuffled order, checking each word only when it's needed.
+    // A tricky deck gets a few goes, then the kitchen deals a new one.
+    let checks = 0;
+    for (const f of fives) {
+      if (!can(f)) continue;
+      const okFours = [];
+      for (const w of fours) {
+        if (!can(w)) continue;
+        for (const other of okFours) {
+          if (servableTogether(deck, [other, w, f], alone)) return { deck, specials: [other, w, f] };
+          if (++checks >= 12) break;
+        }
+        if (checks >= 12) break;
+        okFours.push(w);
+      }
+      if (checks >= 12) break;
+    }
+  }
+  const deck = newDeck(rnd); // never expected; keeps the game playable
+  return { deck, specials: [...pick(SPECIALS4, 2, rnd), ...pick(SPECIALS5, 1, rnd)] };
+}
+
 function newGame(mode, names, date = null, endless = false) {
-  const rnd = mode === "daily" ? seeded("small-plates/" + date) : Math.random;
-  const deck = newDeck(rnd);
-  const specials = [...pick(SPECIALS4, 2, rnd), ...pick(SPECIALS5, 1, rnd)].map(w => ({ w, by: null }));
+  const deal = mode === "daily" ? dailyDeal(date) : null;
+  const deck = deal ? deal.deck : newDeck(Math.random);
+  // Specials are only on the Daily Special's menu.
+  const specials = (deal ? deal.specials : []).map(w => ({ w, by: null }));
   return {
     mode, names, date,
     endless: mode !== "daily" && !!endless, // letters keep coming until someone closes the check
@@ -1006,7 +1131,6 @@ function place(r, c) {
     }
     else if (course > 1) note = "course " + course;
     state.used[w] = p;
-    if (sp && state.endless) refreshSpecial(sp);
     state.scores[p] += pts;
     state.rowLog[r].push("g");
     state.log.push({ p, w, pts, kind: "word" });
@@ -1039,13 +1163,6 @@ function skip() {
 // Endless tables: the kitchen opens a fresh bag of letters before the last one runs out.
 function topUpDeck() {
   if (state.endless && state.deck.length - state.pos < 3) state.deck.push(...newDeck(Math.random));
-}
-
-// Endless tables: a served special is swapped for a new one of the same length.
-function refreshSpecial(sp) {
-  const pool = (sp.w.length === 4 ? SPECIALS4 : SPECIALS5)
-    .filter(w => !state.specials.some(s => s.w === w) && state.used[w] === undefined);
-  if (pool.length) { sp.w = pick(pool, 1)[0]; sp.by = null; }
 }
 
 function closeCheck() {
@@ -1147,6 +1264,7 @@ function render() {
 
   // Specials board
   const sp = $("specials");
+  sp.hidden = !s.specials.length; // only the Daily Special has specials
   sp.replaceChildren(el("h2", "", "Today's specials"));
   s.specials.forEach(x => {
     const item = el("span", "special" + (x.by !== null ? " gone" : ""));
@@ -1954,7 +2072,7 @@ const SLIDES = [
   },
   {
     title: "Order the specials",
-    text: "Spell one of today's specials for a big bonus. Play for one to beat your best, pass the phone with two, or try the Daily Special: the same letters for everyone, once a day.",
+    text: "Play for one to beat your best, pass the phone with two, or try the Daily Special: the same letters for everyone, once a day, with specials to spell for a big bonus.",
     demo: () => {
       const board = el("div", "specials");
       board.append(el("h2", "", "Today's specials"));
