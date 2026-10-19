@@ -32,8 +32,8 @@ LITTLE THINGS THAT MAKE IT FUN
 
 MADE TO BE NICE TO YOU
 • Plays completely offline.
-• No accounts and no tracking. Your games and stats stay on your phone.
-• No pop-up ads, ever.
+• No accounts. Your games and stats stay on your phone.
+• One small banner ad at the bottom that never covers the game. Nothing pops up between rounds, nothing makes you wait, and you never have to watch an ad to unlock anything.
 • Light and dark looks, plus sound and vibration you can switch off.
 
 Small Plates is a Dot Awkward game: small games for odd moments.
@@ -59,7 +59,7 @@ Small Plates is a Dot Awkward game: small games for odd moments.
 
 **Privacy policy:** https://dotawkward.com/privacy/
 
-**Ads:** No, my app does not contain ads.
+**Ads:** Yes, my app contains ads. (From version 1.2. Play then shows a "Contains ads" label on the listing.)
 
 **App access:** All functionality is available without special access.
 
@@ -76,12 +76,7 @@ Small Plates is a Dot Awkward game: small games for odd moments.
 
 **News app:** No. **Government app:** No. **Financial features:** None. **Health:** None.
 
-**Data safety**
-- Does your app collect or share any of the required user data types? **No.**
-- Is all of the user data collected by your app encrypted in transit? Not applicable: nothing is collected.
-- Do you provide a way for users to request that their data be deleted? Not applicable: nothing leaves the phone, and uninstalling erases it.
-
-Google's definition of "collected" means sent off the device, so saved games and names kept only in the phone's storage don't count.
+**Data safety**: see `data-safety.md` for the full answers now that the app has a banner ad. Update the form before the first build with ads goes to testers.
 
 ## Release notes for the first test
 

@@ -1,6 +1,7 @@
 // Builds Small Plates from game.template.html:
 //   small-plates.html  the Claude artifact version (page body only, Google Fonts)
 //   docs/              the installable offline web app served by GitHub Pages
+//   android-web/       the same app plus the ad banner (app/ads.js), bundled into the Google Play app
 // Run: node build.js
 const fs = require("fs");
 const path = require("path");
@@ -33,7 +34,7 @@ const s4 = themed.filter(w => w.length === 4);
 const s5 = themed.filter(w => w.length === 5);
 
 const template = fs.readFileSync(path.join(dir, "game.template.html"), "utf8");
-const appVersion = "1.1 · " + crypto.createHash("sha1").update(template).digest("hex").slice(0, 7);
+const appVersion = "1.2 · " + crypto.createHash("sha1").update(template).digest("hex").slice(0, 7);
 // Shared Dot Awkward pieces, copied from the studio kit (../site/kit) into app/kit.
 const kit = name => fs.readFileSync(path.join(dir, "app", "kit", name), "utf8");
 const page = template
@@ -62,8 +63,7 @@ const fontFaces = `
 @font-face { font-family: "Figtree"; src: url(fonts/figtree.woff2) format("woff2"); font-weight: 300 900; font-display: swap; }
 @font-face { font-family: "Young Serif"; src: url(fonts/young-serif.woff2) format("woff2"); font-weight: 400; font-display: swap; }`;
 
-const body = page.replace(/<!--fonts-->[\s\S]*?<!--\/fonts-->/, "");
-const html = `<!doctype html>
+const doc = (body, extra = "") => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -83,7 +83,7 @@ const html = `<!doctype html>
 body { margin: 0; }
 [hidden] { display: none !important; }
 </style>
-${body}
+${extra}${body}
 <script>
 // The store app ships its files inside the app, so it skips the offline service worker.
 if ("serviceWorker" in navigator && !window.Capacitor) {
@@ -100,6 +100,8 @@ if ("serviceWorker" in navigator && !window.Capacitor) {
 </script>
 </html>
 `;
+const body = page.replace(/<!--fonts-->[\s\S]*?<!--\/fonts-->/, "");
+const html = doc(body);
 fs.writeFileSync(path.join(docs, "index.html"), html);
 
 // Cache version changes whenever any shipped file changes, so phones pick up updates.
@@ -108,4 +110,15 @@ for (const f of [html, fs.readFileSync(path.join(app, "manifest.webmanifest")), 
 const version = hash.digest("hex").slice(0, 10);
 fs.writeFileSync(path.join(docs, "sw.js"), fs.readFileSync(path.join(app, "sw.js"), "utf8").replace("__VERSION__", version));
 
-console.log(`small-plates.html + docs/ built: ${words.length} words (${blocked.size} blocked, ${extras.length} extra), ${s4.length}+${s5.length} specials, ${(page.length / 1024).toFixed(0)} KB page, cache ${version}`);
+// 3. Google Play app version: the same page plus the ad banner, which runs before the game so Settings can offer
+// "Ad privacy choices". Ads live only here; the website and the artifact copy stay ad-free.
+const androidWeb = path.join(dir, "android-web");
+fs.rmSync(androidWeb, { recursive: true, force: true });
+fs.cpSync(path.join(docs, "fonts"), path.join(androidWeb, "fonts"), { recursive: true });
+fs.cpSync(path.join(docs, "icons"), path.join(androidWeb, "icons"), { recursive: true });
+fs.copyFileSync(path.join(app, "manifest.webmanifest"), path.join(androidWeb, "manifest.webmanifest"));
+const ads = fs.readFileSync(path.join(app, "ads.js"), "utf8");
+fs.writeFileSync(path.join(androidWeb, "index.html"), doc(body, `<script>\n${ads}</script>\n`));
+if (/showBanner|ca-app-pub|Plugins\.AdMob/.test(page + html)) throw new Error("Ad code got into the website build");
+
+console.log(`small-plates.html + docs/ + android-web/ built: ${words.length} words (${blocked.size} blocked, ${extras.length} extra), ${s4.length}+${s5.length} specials, ${(page.length / 1024).toFixed(0)} KB page, cache ${version}`);

@@ -22,9 +22,12 @@ node build.js
 - `game.template.html` holds the game itself (markup, styles, and logic).
 - `words-3to5.txt` is the dictionary (3 to 5 letter words from the public-domain ENABLE list), and `words-qu6.txt` adds 6-letter QU words, since the Qu plate spells two letters in one spot.
 - `words-blocked.txt` lists swear words and slurs the game never accepts; `words-extra.txt` adds words the dictionary lacks (like POO).
-- `app/` holds the icons, fonts, web app manifest, and service worker.
+- `app/` holds the icons, fonts, web app manifest, service worker, and `ads.js` (the Google Play app's bottom banner).
 - `build.js` embeds the words and writes:
   - `docs/`, the installable offline web app that GitHub Pages serves
   - `small-plates.html`, the Claude artifact version
+  - `android-web/`, the Google Play app's copy with the ad banner added (not committed; the Android build makes it)
+
+The website and artifact versions never have ads.
 
 Fonts (Archivo Black, Caveat, Figtree, Young Serif) are from Google Fonts under the SIL Open Font License.

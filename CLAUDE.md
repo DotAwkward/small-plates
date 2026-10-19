@@ -5,7 +5,8 @@ A word game for one or two, inspired by the old iPod touch game Moxie (rules and
 ## Build and ship
 
 - The whole game is `game.template.html` (markup, styles, logic). Word lists: `words-3to5.txt` (dictionary), `words-qu6.txt` (6-letter QU words), `words-blocked.txt` (swear words and slurs, never accepted), `words-extra.txt` (words the dictionary lacks).
-- `node build.js` embeds the words and writes `docs/` (the installable web app GitHub Pages serves) and `small-plates.html` (the single-file Claude artifact copy). To ship the web version, rebuild and commit `docs/`.
+- `node build.js` embeds the words and writes `docs/` (the installable web app GitHub Pages serves), `small-plates.html` (the single-file Claude artifact copy) and `android-web/` (gitignored; Capacitor's `webDir`, the same page plus `app/ads.js`). To ship the web version, rebuild and commit `docs/`.
+- Ads: only the Play app, via `app/ads.js` (AdMob banner plus Google's consent form, `@capacitor-community/admob`). build.js fails if ad code reaches `docs/` or the artifact. AdMob IDs: app ID in `android/app/build.gradle`, banner ID and `TESTING` in `app/ads.js`. Setup steps and Play answers: `store/admob-setup.md`, `store/data-safety.md`.
 - Pushing to `main` runs the "Android app" GitHub Actions workflow, which builds the signed `.aab` for Google Play (download from the run's Artifacts). Signing secrets are already set in the repo.
 - `store/` has the Play listing (`listing.md`), tester invites and the screenshot capture script (`capture.mjs`; `store/frames/` is generated and gitignored).
 

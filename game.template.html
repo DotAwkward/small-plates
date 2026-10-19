@@ -471,7 +471,10 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: 24px 32px;
   display: flex; flex-direction: column; gap: 16px;
+  /* Fill the screen, with the links and sign-off sitting at the bottom instead of a gap under them. */
+  min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 }
+.home-links { margin-top: auto; }
 .home-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding-top: 6px; }
 .home-hero h1 { margin: 8px 0 0; font-family: var(--font-display); font-weight: 400; font-size: 2.3rem; line-height: 1; text-wrap: balance; }
 .home-hero .tag { font-family: var(--font-chalk); font-weight: 700; font-size: 1.35rem; color: var(--rim); line-height: 1.2; }
@@ -489,14 +492,15 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 .hcard.daily .pill { background: var(--saffron); color: var(--chalk-bg); flex-shrink: 0; }
 .hcard:hover { filter: brightness(1.05); }
 .modes-h { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
-.home-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.home-modes { display: flex; flex-direction: column; gap: 8px; }
 .mode-btn {
-  background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 6px;
-  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left;
 }
 .mode-btn:hover { border-color: var(--rim); }
-.mode-btn b { font-family: var(--font-display); font-weight: 400; font-size: 1.05rem; }
-.mode-btn small { color: var(--muted); font-size: 0.72rem; line-height: 1.2; }
+.mode-btn b { display: block; font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; line-height: 1.15; }
+.mode-btn small { display: block; color: var(--muted); font-size: 0.85rem; line-height: 1.2; margin-top: 2px; }
+.mode-btn .arrow { color: var(--muted); font-size: 1.2rem; flex-shrink: 0; }
 .home-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 16px; border-top: 1.5px dashed var(--line); padding-top: 12px; }
 .home-links button { background: none; border: 0; color: var(--muted); font-weight: 600; font-size: 0.9rem; cursor: pointer; padding: 6px 2px; }
 .home-links button:hover { color: var(--ink); }
@@ -1781,6 +1785,16 @@ function renderSettings(body) {
   again.style.marginTop = "16px";
   again.addEventListener("click", () => openIntro(false, true));
   body.append(fs, again);
+  // The Play app's ad banner (app/ads.js, not in the website) lets people in the EU and UK change their ad consent.
+  const ads = IN_APP && window.smallPlatesAds;
+  if (ads && ads.privacyOptionsRequired()) {
+    const choices = el("button", "linkish", "Ad privacy choices");
+    choices.type = "button";
+    choices.style.marginTop = "12px";
+    choices.style.display = "block";
+    choices.addEventListener("click", () => ads.showPrivacyOptions());
+    body.append(choices);
+  }
 }
 
 function privacyLink() {
@@ -1812,7 +1826,9 @@ function renderAbout(body) {
     head,
     el("p", "", "A word game for one or two, made for waiting on dinner. Build words one letter at a time, then keep turning them into new ones."),
     el("h3", "", "Your privacy"),
-    el("p", "", "Small Plates doesn't collect anything about you. There are no accounts, ads or trackers. Your games, names, stats and settings are saved only on this phone, and clearing your browser data or deleting the app erases them."),
+    el("p", "", IN_APP
+      ? "There are no accounts, and your games, names, stats and settings are saved only on this phone; deleting the app erases them. The app shows one small banner ad at the bottom, from Google AdMob, which never covers the game. Google may use your phone's advertising ID to choose and count ads; you can reset or delete it in your phone's settings."
+      : "Small Plates doesn't collect anything about you. There are no accounts, ads or trackers. Your games, names, stats and settings are saved only on this phone, and clearing your browser data or deleting the app erases them."),
     privacyLink(),
     el("h3", "", "Thanks"),
     el("p", "muted", "Inspired by Moxie, the 2009 iPod touch word game by Daisy Wheels. Words come from the public-domain ENABLE word list. Fonts are Young Serif, Figtree, Caveat and Archivo Black, under the SIL Open Font License."),
@@ -2295,7 +2311,9 @@ function renderHome() {
   ].forEach(([title, sub, preset]) => {
     const b = el("button", "mode-btn");
     b.type = "button";
-    b.append(el("b", "", title), el("small", "", sub));
+    const text = el("span");
+    text.append(el("b", "", title), el("small", "", sub));
+    b.append(text, el("span", "arrow", "→"));
     b.addEventListener("click", () => openSetup(false, preset));
     modes.append(b);
   });

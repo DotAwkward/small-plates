@@ -1,6 +1,6 @@
 {
   "name": "small-plates",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Small Plates, a word game for one or two by Dot Awkward.",
   "scripts": {
@@ -8,6 +8,7 @@
     "android:sync": "node build.js && npx cap sync android"
   },
   "dependencies": {
+    "@capacitor-community/admob": "8.2.1",
     "@capacitor/android": "8.5.3",
     "@capacitor/core": "8.5.3",
     "@capacitor/share": "8.0.3"

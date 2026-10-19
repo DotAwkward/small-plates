@@ -1,7 +1,7 @@
 {
   "appId": "com.dotawkward.smallplates",
   "appName": "Small Plates",
-  "webDir": "docs",
+  "webDir": "android-web",
   "android": {
     "backgroundColor": "#2c5aa0"
   }

@@ -29,7 +29,7 @@ Hi,
 
 I've been making small phone games under the name Dot Awkward, and the first one, Small Plates, is almost ready for the Google Play Store. It's a cozy word game: letters come out one at a time, you build words on little plates, and you keep turning each word into the next one (TIN, TINE, TILE, TILED). You can play alone, pass the phone back and forth with someone, or try the Daily Special, where everyone gets the same letters each day.
 
-Before Google lets a new developer publish, 12 people have to test the app for 14 days in a row. I'd love for you to be one of them. It's free, there are no ads, and it doesn't collect anything about you.
+Before Google lets a new developer publish, 12 people have to test the app for 14 days in a row. I'd love for you to be one of them. It's free. Newer test versions show one small banner ad at the bottom (a test ad at first), which never covers the game and never pops up between rounds.
 
 Here's how:
 1. Reply with the Gmail address you use on your Android phone.
