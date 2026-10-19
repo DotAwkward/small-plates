@@ -843,6 +843,30 @@ function applyTheme() {
   if (t === "light" || t === "dark") root.setAttribute("data-theme", t);
   else if (HOST_THEME) root.setAttribute("data-theme", HOST_THEME);
   else root.removeAttribute("data-theme");
+  syncSystemBars();
+}
+
+// In the Play app the game draws under Android's status and navigation bars, so their icons
+// follow the game's light or dark look (the game can be set differently from the phone).
+// Older Android WebViews keep the page out from under the bars instead; then the gap is the
+// phone's own color, so the icons follow the phone.
+function syncSystemBars() {
+  const bars = IN_APP && window.Capacitor.Plugins && window.Capacitor.Plugins.SystemBars;
+  if (!bars) return;
+  const root = document.documentElement;
+  const css = getComputedStyle(root);
+  const underBars = ["top", "bottom"].some(side => parseFloat(css.getPropertyValue("--safe-area-inset-" + side)) > 0);
+  const t = root.getAttribute("data-theme");
+  const dark = t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  const style = !underBars ? "DEFAULT" : dark ? "DARK" : "LIGHT";
+  if (style === syncSystemBars.last) return;
+  syncSystemBars.last = style;
+  Promise.resolve(bars.setStyle({ style })).catch(() => {});
+}
+if (IN_APP) {
+  // The app fills in the --safe-area-inset-* sizes once the page is showing, and the phone can switch light and dark.
+  new MutationObserver(syncSystemBars).observe(document.documentElement, { attributes: true, attributeFilter: ["style"] });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncSystemBars);
 }
 
 /* ---------- Sound and vibration ---------- */

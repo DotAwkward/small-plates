@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Behind the status and navigation bars: the game's own page color (dark). -->
+    <color name="page_background">#10141B</color>
+</resources>
