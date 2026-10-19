@@ -155,6 +155,9 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
     repeating-linear-gradient(0deg, color-mix(in srgb, var(--rim) 7%, transparent) 0 14px, transparent 14px 28px),
     repeating-linear-gradient(90deg, color-mix(in srgb, var(--rim) 7%, transparent) 0 14px, transparent 14px 28px);
   display: flex; flex-direction: column; gap: 6px;
+  /* On short screens (small phones, desktop windows) shrink the plates so all four rows clear the order ticket instead of hiding under it. */
+  --cell: max(32px, calc((100dvh - 590px) / 4));
+  width: 100%; max-width: calc(5 * var(--cell) + 81px); margin-inline: auto;
 }
 .row {
   display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) 30px; gap: 5px; align-items: center;
@@ -349,7 +352,8 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 @media (max-width: 400px) { .brand span { display: none; } }
 
 /* Intro and How to play */
-.intro { gap: 16px; }
+.intro { gap: 16px; min-height: min(480px, calc(100dvh - 32px)); }
+.intro .intro-actions { margin-top: auto; }
 .intro-body { display: flex; flex-direction: column; gap: 10px; animation: slidein .25s ease-out; }
 @keyframes slidein { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
 .intro-body .step { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rim); }
@@ -375,10 +379,12 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
     repeating-linear-gradient(0deg, color-mix(in srgb, var(--rim) 7%, transparent) 0 14px, transparent 14px 28px),
     repeating-linear-gradient(90deg, color-mix(in srgb, var(--rim) 7%, transparent) 0 14px, transparent 14px 28px);
 }
-.demo { border-radius: 14px; padding: 16px 10px; min-height: 148px; display: grid; place-items: center; }
+.demo { min-width: 0; border-radius: 14px; padding: 16px 10px; min-height: 148px; display: grid; place-items: center; }
 .demo-stack { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .demo-row { display: flex; gap: 6px; align-items: center; padding: 4px; border-radius: 999px; }
-.demo-row .plate { width: 44px; height: 44px; font-size: 1.2rem; flex-shrink: 0; }
+.demo-stack { max-width: 100%; min-width: 0; }
+.intro, .intro-body { min-width: 0; }
+.demo-row .plate { --d: min(44px, calc((100vw - 190px) / 5)); width: var(--d); height: var(--d); font-size: clamp(0.9rem, 5vw, 1.2rem); flex-shrink: 0; }
 .demo-row.small .plate { width: 34px; height: 34px; font-size: 0.95rem; }
 .demo-row.small .plate .v { display: none; }
 .demo-row.served { background: color-mix(in srgb, var(--saffron) 22%, transparent); }
@@ -654,7 +660,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 <div class="overlay" id="setup" hidden>
   <form class="sheet scroll" id="setupForm" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
     <h2 id="setupTitle">New table</h2>
-    <fieldset class="seg">
+    <fieldset class="seg" id="modeSeg">
       <legend>How many?</legend>
       <label><input type="radio" name="mode" value="solo" id="modeSolo"><span>Table for one<small>Beat your best score</small></span></label>
       <label><input type="radio" name="mode" value="duo" id="modeDuo" checked><span>Table for two<small>Take turns, one letter each</small></span></label>
@@ -1279,8 +1285,16 @@ function render() {
 /* ---------- Overlays ---------- */
 
 const OVERLAYS = ["intro", "setup", "end", "menu", "page"];
+// An open dialog takes one history step, so the phone's Back button closes the dialog instead of leaving the game.
+let overlayEntry = false;
+let skipPop = 0;
+let afterPop = null;
 function showOverlay(id) {
   OVERLAYS.forEach(o => { $(o).hidden = o !== id; });
+  if (id && !overlayEntry && !IN_FRAME) {
+    history.pushState({ view: "overlay", under: history.state && history.state.view }, "");
+    overlayEntry = true;
+  }
   if (id) {
     const focusable = $(id).querySelector(".btn.primary, [data-close], button, input");
     if (focusable) focusable.focus({ preventScroll: true });
@@ -1289,6 +1303,10 @@ function showOverlay(id) {
 function closeOverlays() {
   showOverlay(null);
   stopCountdown();
+  if (overlayEntry) {
+    overlayEntry = false;
+    if (history.state && history.state.view === "overlay") { skipPop++; history.back(); }
+  }
 }
 document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", closeOverlays));
 OVERLAYS.forEach(id => $(id).addEventListener("click", e => {
@@ -1415,6 +1433,7 @@ function openSetup(first, preset) {
   }
   $("setupNote").textContent = midGame ? "This replaces your unfinished table." : "Names stay on this phone.";
   $("cancelSetup").hidden = !!first;
+  $("modeSeg").hidden = !!(preset && preset.mode);
   syncSetup();
   showOverlay("setup");
 }
@@ -2061,13 +2080,39 @@ function showGame() {
   $("game").hidden = false;
   $("appInstall").append($("installBar"));
   if (fromHome) window.scrollTo(0, 0);
-  if (!IN_FRAME && !(history.state && history.state.view === "game")) history.pushState({ view: "game" }, "");
+  if (IN_FRAME) return;
+  const st = history.state;
+  if (st && st.view === "overlay") {
+    // The dialog that started this game is on top: turn its step into the game's, or drop it if the game already has one.
+    overlayEntry = false;
+    if (st.under === "game") { skipPop++; history.back(); }
+    else history.replaceState({ view: "game" }, "");
+  } else if (!(st && st.view === "game")) history.pushState({ view: "game" }, "");
 }
 function goHome() {
-  if (!IN_FRAME && history.state && history.state.view === "game") history.back();
+  if (IN_FRAME) return showHome();
+  const st = history.state;
+  if (st && st.view === "overlay") {
+    overlayEntry = false;
+    skipPop++;
+    afterPop = showHome;
+    history.go(st.under === "game" ? -2 : -1);
+  } else if (st && st.view === "game") history.back();
   else showHome();
 }
-window.addEventListener("popstate", () => { if (!onHome()) showHome(); });
+window.addEventListener("popstate", () => {
+  if (skipPop) {
+    skipPop--;
+    if (!skipPop && afterPop) { const f = afterPop; afterPop = null; f(); }
+    return;
+  }
+  if (overlayEntry) {
+    overlayEntry = false;
+    if (!$("intro").hidden) closeIntro(); else closeOverlays();
+    return;
+  }
+  if (!onHome()) showHome();
+});
 
 function homeCard(kind, title, sub, onClick, pill) {
   const b = el("button", "hcard " + kind);
@@ -2146,6 +2191,8 @@ function migrate() {
 }
 
 function start(data) {
+  // A reload keeps the old history step; the app always starts on Home, so clear it.
+  if (!IN_FRAME && history.state) history.replaceState(null, "");
   migrate();
   applyTheme();
   updateInstallBar();
