@@ -182,7 +182,8 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
   width: 100%; height: 100%;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 42%, var(--glaze) 60%, var(--glaze-shade) 100%);
-  box-shadow: inset 0 0 0 4px var(--glaze), inset 0 0 0 6.5px var(--by, var(--rim)), 0 2px 3px rgba(0, 0, 0, .18);
+  box-shadow: inset 0 0 0 4px var(--glaze), inset 0 0 0 6.5px var(--by, var(--rim)), var(--under, 0 0 transparent), 0 2px 3px rgba(0, 0, 0, .18);
+  top: calc(var(--lift, 0px) * -1);
   color: var(--plate-ink);
   display: grid; place-items: center;
   font-family: var(--font-tile);
@@ -208,6 +209,9 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 .course.bad { color: var(--surface); background: var(--bad); border: 1.5px solid var(--bad); font-family: var(--font-body); font-weight: 700; }
 .msg.blocked .pts { color: var(--muted); }
 .pop { animation: pop .28s ease-out; }
+/* A swapped letter is a new plate set down on top of the old one. */
+.land { animation: land .3s cubic-bezier(.3, 1.3, .5, 1); }
+@keyframes land { 0% { transform: translateY(-16px) scale(1.06); opacity: .5; } 100% { transform: none; opacity: 1; } }
 @keyframes pop { 0% { transform: scale(.6); } 70% { transform: scale(1.08); } 100% { transform: scale(1); } }
 .shake { animation: shake .4s ease-in-out; }
 @keyframes shake { 0%,100% { transform: none; } 20%,60% { transform: translateX(-5px); } 40%,80% { transform: translateX(5px); } }
@@ -518,7 +522,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, .seg input:foc
 @media (prefers-reduced-motion: reduce) {
   .switch span, .switch span::after { transition: none; }
   .intro-body, .dots span { animation: none; transition: none; }
-  .pop, .shake { animation: none; }
+  .pop, .shake, .land { animation: none; }
   .player, .ticket { transition: none; }
 }
 /* Computer screens and tablets: a wider table, bigger plates and bigger text. Everything sized in rem grows with the root size. */
@@ -968,7 +972,8 @@ function place(r, c) {
   }
 
   snapshot();
-  row.cells[c] = { ch, by: p };
+  // Swapping a letter sets a new plate on top, so count the plates in this spot.
+  row.cells[c] = { ch, by: p, n: (before ? before.n || 1 : 0) + 1 };
   state.pos++;
   const w = rowWord(row);
 
@@ -1165,7 +1170,8 @@ function render() {
         b.classList.add("filled");
         const t = plateFor("plate", cell.ch);
         t.style.setProperty("--by", pColor(cell.by));
-        if (flash && flash.r === r && flash.c === c && flash.kind === "pop") t.classList.add("pop");
+        stackUnder(t, cell.n || 1);
+        if (flash && flash.r === r && flash.c === c && flash.kind === "pop") t.classList.add(cell.n > 1 ? "land" : "pop");
         b.append(t);
         b.disabled = !targets.has(c);
         b.setAttribute("aria-label", "Swap " + face(cell.ch) + " for " + face(current()));
@@ -1862,6 +1868,17 @@ function logoPair() {
   return d;
 }
 
+// Older plates peek out under the top one, one rim per plate (up to three show).
+const STACK_SHOW = 3;
+function stackUnder(plate, n) {
+  const k = Math.min(n, STACK_SHOW + 1) - 1;
+  if (!k) return;
+  const rims = [];
+  for (let i = 1; i <= k; i++) rims.push(`0 ${4 * i - 1.5}px 0 var(--glaze-shade)`, `0 ${4 * i}px 0 var(--by, var(--rim))`);
+  plate.style.setProperty("--under", rims.join(", "));
+  plate.style.setProperty("--lift", (2 * k) + "px");
+  plate.title = n + " plates in this spot";
+}
 function demoPlate(ch, color) {
   const s = el("span", "plate", upper(ch));
   s.style.setProperty("--by", color || "var(--p1)");
