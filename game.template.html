@@ -719,7 +719,7 @@ const SPECIALS5 = __SPECIALS5__;
 const APP_VERSION = "__APPVERSION__";
 
 const DICT = new Set(WORDLIST.split(" "));
-const VALUES = { a:1,b:3,c:3,d:2,e:1,f:4,g:2,h:4,i:1,j:8,k:5,l:1,m:3,n:1,o:1,p:3,q:10,r:1,s:1,t:1,u:1,v:4,w:4,x:8,y:4,z:10 };
+const VALUES = { a:1,b:3,c:3,d:2,e:1,f:4,g:2,h:4,i:1,j:10,k:5,l:1,m:3,n:1,o:1,p:3,q:9,r:1,s:1,t:1,u:1,v:4,w:4,x:10,y:4,z:10 }; // J, Qu, X and Z all score 10 (Qu is q + u): one of them is in every game
 const LEN_MULT = { 3: 10, 4: 15, 5: 25, 6: 35 }; // 6 letters only happens with the Qu plate
 const COURSE_BONUS = 15;
 const SPECIAL_BONUS = { 4: 100, 5: 200 };
@@ -918,11 +918,45 @@ function feedback(kind) {
 
 /* ---------- Game setup ---------- */
 
-function newDeck(rnd) {
+// `before` is the letters already dealt ahead of this bag (endless tables), so runs carry on across bags.
+function newDeck(rnd, before = []) {
   // DECK_SIZE (40) letters: 17 vowels, 22 consonants (the commonest doubled up), and one rare letter.
   const letters = ("EEEEEAAAAIIIOOOUU" + "TTTNNRRSSL" + "DCMPHGB" + "FWYKV").split("");
   letters.push(pick(["J", "Q", "X", "Z"], 1, rnd)[0]);
-  return shuffle(letters.map(c => c.toLowerCase()), rnd);
+  return noLongRuns(shuffle(letters.map(c => c.toLowerCase()), rnd), before);
+}
+
+// Never more than MAX_RUN vowels or consonants in a row. Keeps the shuffled order wherever it can: when
+// the next letter would make the run too long (or leave the rest unable to avoid one), the next letter of
+// the other kind is served first. Uses no randomness, so a Daily Special deck that was already fine stays the same.
+const MAX_RUN = 5;
+function noLongRuns(deck, before = []) {
+  const kind = ch => ("aeiou".includes(ch) ? "v" : "c");
+  const memo = new Map();
+  // Can v vowels and c consonants still follow a run of r letters of kind t?
+  const ok = (v, c, t, r) => {
+    if (!v && !c) return true;
+    const key = [v, c, t, r].join();
+    if (!memo.has(key)) memo.set(key,
+      (v > 0 && !(t === "v" && r === MAX_RUN) && ok(v - 1, c, "v", t === "v" ? r + 1 : 1)) ||
+      (c > 0 && !(t === "c" && r === MAX_RUN) && ok(v, c - 1, "c", t === "c" ? r + 1 : 1)));
+    return memo.get(key);
+  };
+  let t = "", r = 0;
+  for (const ch of before.slice(-MAX_RUN)) { r = kind(ch) === t ? r + 1 : 1; t = kind(ch); }
+  const left = deck.slice(), out = [];
+  let v = left.filter(ch => kind(ch) === "v").length, c = left.length - v;
+  const fits = k => !(t === k && r === MAX_RUN) && ok(v - (k === "v"), c - (k === "c"), k, t === k ? r + 1 : 1);
+  while (left.length) {
+    let i = 0;
+    if (!fits(kind(left[0]))) i = Math.max(0, left.findIndex(ch => kind(ch) !== kind(left[0])));
+    const [ch] = left.splice(i, 1);
+    r = kind(ch) === t ? r + 1 : 1;
+    t = kind(ch);
+    if (t === "v") v--; else c--;
+    out.push(ch);
+  }
+  return out;
 }
 
 // The quickest way to build `target` on one plate from the deck, using only letters not in `taken`
@@ -1190,7 +1224,7 @@ function skip() {
 
 // Endless tables: the kitchen opens a fresh bag of letters before the last one runs out.
 function topUpDeck() {
-  if (state.endless && state.deck.length - state.pos < 3) state.deck.push(...newDeck(Math.random));
+  if (state.endless && state.deck.length - state.pos < 3) state.deck.push(...newDeck(Math.random, state.deck));
 }
 
 function closeCheck() {
