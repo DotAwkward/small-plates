@@ -34,7 +34,7 @@ const s4 = themed.filter(w => w.length === 4);
 const s5 = themed.filter(w => w.length === 5);
 
 const template = fs.readFileSync(path.join(dir, "game.template.html"), "utf8");
-const appVersion = "1.2 · " + crypto.createHash("sha1").update(template).digest("hex").slice(0, 7);
+const appVersion = "1.3 · " + crypto.createHash("sha1").update(template).digest("hex").slice(0, 7);
 // Shared Dot Awkward pieces, copied from the studio kit (../site/kit) into app/kit.
 const kit = name => fs.readFileSync(path.join(dir, "app", "kit", name), "utf8");
 const page = template

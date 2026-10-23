@@ -13,7 +13,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode((env("VERSION_CODE") ?: "1").toInteger())
-        versionName "1.2"
+        versionName "1.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // AdMob app ID (Google's test app until the real one goes here; the banner ID is in app/ads.js).
         manifestPlaceholders = [admobAppId: "ca-app-pub-3940256099942544~3347511713"]
